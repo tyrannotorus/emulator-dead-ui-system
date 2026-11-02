@@ -1088,7 +1088,24 @@ std::vector<InfoLine> moduleInfo(const StoreModule& m)
 	{
 		heading("Source");
 		const size_t scheme = info.repo.find("://");
-		paragraph(scheme == std::string::npos ? info.repo : info.repo.substr(scheme + 3), White);
+		const std::string link = scheme == std::string::npos ? info.repo : info.repo.substr(scheme + 3);
+		// no spaces to break at: after a / or a - instead
+		std::string line, piece;
+		for (size_t i = 0; i < link.size(); i++)
+		{
+			piece += link[i];
+			if (link[i] != '/' && link[i] != '-' && i + 1 < link.size())
+				continue;
+			if (!line.empty() && tiny.measure(line + piece) > width)
+			{
+				lines.push_back({ line, White, false, false, false });
+				line.clear();
+			}
+			line += piece;
+			piece.clear();
+		}
+		if (!line.empty())
+			lines.push_back({ line, White, false, false, false });
 	}
 	return lines;
 }
