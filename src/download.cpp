@@ -276,11 +276,10 @@ std::vector<StoreEntry> storeCatalog(const std::atomic<bool>& cancel)
 {
 	const char *test = std::getenv("DEADUI_TEST_CATALOG");
 	const std::string text = fetchText(test != nullptr && *test != '\0' ? test : DEADUI_STORE_URL, cancel);
-	std::vector<StoreEntry> entries = parseCatalog(text);
-	if (entries.empty())
+	if (text.compare(0, 8, "store = ") != 0)	// not fetched, or something else's page
 		return parseCatalog(readText(catalogFile()));
 	saveCatalog(text);
-	return entries;
+	return parseCatalog(text);
 }
 
 std::string install(const StoreEntry& entry, std::atomic<uint64_t>& done, std::atomic<uint64_t>& total,
