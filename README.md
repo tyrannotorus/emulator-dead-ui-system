@@ -1,7 +1,7 @@
 # Dead UI System
 
 The menu, start page and recomp module store shared by emulators for NextUI handhelds and their recomp
-modules. Drawn on the CPU, to look like NextUI's own menus.
+modules. Drawn on the CPU, so that it needs nothing of the host's renderer.
 
 ## Use
 

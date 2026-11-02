@@ -1,5 +1,5 @@
-// The menu over a paused game and the start page, drawn on the CPU to look like NextUI's own emulators'
-// menus. Shared by an emulator and its recomp modules, so that each one plays with the same menu: a module
+// The menu over a paused game and the start page, drawn on the CPU so that they need nothing of the host's
+// renderer. Shared by an emulator and its recomp modules, so that each one plays with the same menu: a module
 // adds no menu of its own. A host (the emulator, a module) gives it the screen, the
 // menu's buttons, the paused game's picture and its own pages; it needs nothing of the emulator.
 //
@@ -36,7 +36,7 @@ void setDisplay(Display *display);
 // the menu's buttons, which the host maps its own onto
 enum class Button { None, Up, Down, Left, Right, A, B, X, Menu };
 
-// NextUI's layout on the Brick: its 1x sizes, three times as large
+// The layout on the Brick: its 1x sizes, three times as large
 constexpr int Scale = 3;
 constexpr int S(int v) { return v * Scale; }
 constexpr int Padding = S(5);
@@ -50,7 +50,7 @@ constexpr u32 LightGray = 0x7f7f7f;
 constexpr u32 TextGray = 0xb4b4b4;		// text under a page's line
 constexpr u32 Black = 0x000000;
 
-// Noto Sans Bold at NextUI's sizes
+// Noto Sans Bold at the layout's sizes
 struct Fonts
 {
 	Font large;		// the main list, messages
@@ -178,7 +178,7 @@ std::vector<std::string> wrap(Font& font, const std::string& text, int width);
 bool network();
 std::string networkStatus();
 
-// the game's name as NextUI shows a file's: without its extensions or trailing (...) and [...]
+// the game's name: a file's, without its extensions or trailing (...) and [...]
 std::string gameName(const std::string& path);
 
 }

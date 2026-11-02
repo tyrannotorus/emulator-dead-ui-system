@@ -51,7 +51,7 @@ constexpr int StoreLoadingMs = 400;	// "Loading Store..." up at least this long:
 constexpr int SlideMs = 150;		// a page's rows sliding in, the ones before them out
 constexpr float BackdropBrightness = 0.4f;	// the paused game behind the menu (white: 40% grey)
 
-// NextUI's "MinUI" palette
+// the palette
 constexpr u32 ColorMain = 0xffffff;			// the selected row's pill, the buttons' circles
 constexpr u32 ColorAccent = 0x262626;		// the pills behind the title, the hints, the selected option
 constexpr u32 ColorAccent2 = 0x999999;		// the buttons' letters
@@ -368,7 +368,7 @@ int rowsTop()
 	return Padding + PillSize + (st.canvas.height() - 2 * (Padding + PillSize) - MaxRows * RowPitch) / 2;
 }
 
-// NextUI's gray arrows, 24 x 4 (1x), in the gaps above and below the rows: there is more that way
+// gray arrows, 24 x 4 (1x), in the gaps above and below the rows: there is more that way
 void drawArrows(int left, bool above, bool below)
 {
 	static const Sprite up = [] {
