@@ -4,9 +4,10 @@
 #   DEADUI_HOME_ENV     the environment variable naming the emulator's folder
 #   DEADUI_LINK_PREFIX  the network interfaces that are not a connection to the internet
 #   DEADUI_RUN_MARKER   a file that exists while a recomp module runs
+#   DEADUI_STORE_URL    the address of the list of recomp modules
 #   DEADUI_CONSOLE      options/<console>.cpp: Emulator Options' settings
 # and finds or leaves to this file CURL, ZLIB and freetype.
-foreach(setting DEADUI_APP_NAME DEADUI_HOME_ENV DEADUI_LINK_PREFIX DEADUI_RUN_MARKER DEADUI_CONSOLE)
+foreach(setting DEADUI_APP_NAME DEADUI_HOME_ENV DEADUI_LINK_PREFIX DEADUI_RUN_MARKER DEADUI_STORE_URL DEADUI_CONSOLE)
     if(NOT ${setting})
         message(FATAL_ERROR "deadui: ${setting} is not set")
     endif()
@@ -33,7 +34,8 @@ target_compile_definitions(deadui PRIVATE
         DEADUI_APP_NAME="${DEADUI_APP_NAME}"
         DEADUI_HOME_ENV="${DEADUI_HOME_ENV}"
         DEADUI_LINK_PREFIX="${DEADUI_LINK_PREFIX}"
-        DEADUI_RUN_MARKER="${DEADUI_RUN_MARKER}")
+        DEADUI_RUN_MARKER="${DEADUI_RUN_MARKER}"
+        DEADUI_STORE_URL="${DEADUI_STORE_URL}")
 
 if(NOT TARGET CURL::libcurl)
     find_package(CURL REQUIRED)

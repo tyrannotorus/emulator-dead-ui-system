@@ -89,6 +89,25 @@ std::vector<StoreEntry> parseCatalog(const std::string& text)
 	return entries;
 }
 
+// through a new file: never half written
+void saveCatalog(const std::string& text)
+{
+	const std::string file = catalogFile();
+	if (readText(file) == text)
+		return;
+	const std::string temp = file + ".new";
+	FILE *f = std::fopen(temp.c_str(), "w");
+	if (f == nullptr)
+		return;
+	std::fputs(text.c_str(), f);
+	const bool written = std::fflush(f) == 0 && fsync(fileno(f)) == 0;
+	std::fclose(f);
+	if (written)
+		std::rename(temp.c_str(), file.c_str());
+	else
+		std::remove(temp.c_str());
+}
+
 int stopWhen(void *cancel, curl_off_t, curl_off_t, curl_off_t, curl_off_t)
 {
 	return *(const std::atomic<bool> *)cancel ? 1 : 0;
@@ -253,46 +272,15 @@ ModuleInfo readInfo(const std::string& text)
 	return info;
 }
 
-void publishCatalog(const std::vector<StoreEntry>& entries)
-{
-	std::string text;
-	for (const StoreEntry& entry : entries)
-	{
-		text += "module = " + entry.id + "\nname = " + entry.name + "\ntitle = " + entry.title + "\nversion = " + entry.version
-				+ "\nurl = " + entry.url + "\nsize = " + std::to_string(entry.size) + "\nsha256 = " + entry.sha256 + "\n";
-		if (!entry.needs.empty())
-			text += "needs = " + entry.needs + "\n";
-		if (!entry.info.empty())
-			text += "info = " + entry.info + "\n";
-		for (const std::string& disc : entry.discs)
-			text += "disc = " + disc + "\n";
-	}
-	const std::string file = catalogFile();
-	if (readText(file) == text)
-		return;
-	const std::string temp = file + ".new";
-	FILE *f = std::fopen(temp.c_str(), "w");
-	if (f == nullptr)
-		return;
-	std::fputs(text.c_str(), f);
-	const bool written = std::fflush(f) == 0 && fsync(fileno(f)) == 0;
-	std::fclose(f);
-	if (written)
-		std::rename(temp.c_str(), file.c_str());
-	else
-		std::remove(temp.c_str());
-}
-
 std::vector<StoreEntry> storeCatalog(const std::atomic<bool>& cancel)
 {
 	const char *test = std::getenv("DEADUI_TEST_CATALOG");
-	if (test != nullptr && *test != '\0')
-	{
-		std::vector<StoreEntry> entries = parseCatalog(fetchText(test, cancel));
-		if (!entries.empty())
-			return entries;
-	}
-	return parseCatalog(readText(catalogFile()));
+	const std::string text = fetchText(test != nullptr && *test != '\0' ? test : DEADUI_STORE_URL, cancel);
+	std::vector<StoreEntry> entries = parseCatalog(text);
+	if (entries.empty())
+		return parseCatalog(readText(catalogFile()));
+	saveCatalog(text);
+	return entries;
 }
 
 std::string install(const StoreEntry& entry, std::atomic<uint64_t>& done, std::atomic<uint64_t>& total,

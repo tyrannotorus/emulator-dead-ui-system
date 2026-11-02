@@ -44,11 +44,9 @@ struct ModuleInfo
 // from store.json's text; whatever is missing or malformed stays empty
 ModuleInfo readInfo(const std::string& json);
 
-// What the store offers: the catalog the emulator published as it started, for itself and its modules. In a test,
-// the file at DEADUI_TEST_CATALOG's address instead, if it can be fetched: it carries no signature, so nothing but
-// a test may ever read one. As text: key = value lines, a module = line starting each entry, the other keys named
-// as above (info = its store.json on one line), disc = once a disc.
-void publishCatalog(const std::vector<StoreEntry>& entries);
+// What the store offers: the list at DEADUI_STORE_URL (in a test, at DEADUI_TEST_CATALOG), or the last one fetched
+// if it cannot be. As text: key = value lines, a module = line starting each entry, the other keys named as above
+// (info = its store.json on one line), disc = once a disc.
 // It may take a while: on a thread of its own, given up when cancel turns true.
 std::vector<StoreEntry> storeCatalog(const std::atomic<bool>& cancel);
 
