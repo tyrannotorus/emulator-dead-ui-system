@@ -166,6 +166,19 @@ float easeOut(float t)
 	return 1.f - (1.f - t) * (1.f - t);
 }
 
+// a default route outlives a dropped Wi-Fi: its link must be up too
+bool linkUp(const char *iface)
+{
+	char path[96];
+	std::snprintf(path, sizeof(path), "/sys/class/net/%s/carrier", iface);
+	FILE *f = std::fopen(path, "r");
+	if (f == nullptr)
+		return false;
+	const int carrier = std::fgetc(f);
+	std::fclose(f);
+	return carrier == '1';
+}
+
 bool checkNetwork()
 {
 	FILE *f = std::fopen("/proc/net/route", "r");
@@ -180,7 +193,8 @@ bool checkNetwork()
 			char iface[32];
 			unsigned destination, gateway, flags;
 			if (std::sscanf(line, "%31s %x %x %x", iface, &destination, &gateway, &flags) == 4)
-				up = destination == 0 && (flags & 1) != 0 && std::strncmp(iface, DEADUI_LINK_PREFIX, std::strlen(DEADUI_LINK_PREFIX)) != 0;	// RTF_UP
+				up = destination == 0 && (flags & 1) != 0 && std::strncmp(iface, DEADUI_LINK_PREFIX, std::strlen(DEADUI_LINK_PREFIX)) != 0	// RTF_UP
+					&& linkUp(iface);
 		}
 	std::fclose(f);
 	return up;
