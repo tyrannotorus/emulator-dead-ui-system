@@ -719,13 +719,13 @@ const recomp::Module *chosenModule()
 // what a module's control is on now: the pad's inputs, comma separated, or NONE
 std::string controlInputs(const recomp::Module& module, const recomp::Control& control)
 {
-	return recomp::get(module.id + ".control." + control.key, control.def);
+	return recomp::moduleGet(module.id, "control." + control.key, control.def);
 }
 
 // kept, and at once in the module it is for, if that one is playing
 void keepControl(const recomp::Module& module, const recomp::Control& control, const std::string& inputs)
 {
-	recomp::set(module.id + ".control." + control.key, inputs);
+	recomp::moduleSet(module.id, "control." + control.key, inputs);
 	if (module.id == st.running && st.host.recompSetting)
 		st.host.recompSetting("control." + control.key, inputs);
 }
@@ -810,10 +810,9 @@ void addModuleOptions(Screen& screen, const recomp::Module& module)
 	fps.name = "Show FPS";
 	fps.row = Row::Choice;
 	fps.values = { "Off", "On" };
-	const std::string fpsKey = module.id + ".fps";
-	fps.value = recomp::get(fpsKey, "off") == "on" ? 1 : 0;
-	fps.change = [fpsKey, playing](int i) {
-		recomp::set(fpsKey, i ? "on" : "off");
+	fps.value = recomp::moduleGet(module.id, "fps", "off") == "on" ? 1 : 0;
+	fps.change = [id = module.id, playing](int i) {
+		recomp::moduleSet(id, "fps", i ? "on" : "off");
 		if (playing && st.host.recompSetting)
 			st.host.recompSetting("fps", i ? "on" : "off");
 	};
@@ -823,8 +822,7 @@ void addModuleOptions(Screen& screen, const recomp::Module& module)
 		Item item;
 		item.name = setting.name;
 		item.row = Row::Choice;
-		const std::string key = module.id + "." + setting.key;
-		const std::string now = recomp::get(key, setting.def);
+		const std::string now = recomp::moduleGet(module.id, setting.key, setting.def);
 		std::vector<std::string> values;
 		for (const auto& value : setting.values)
 		{
@@ -833,10 +831,10 @@ void addModuleOptions(Screen& screen, const recomp::Module& module)
 			values.push_back(value.first);
 			item.values.push_back(value.second);
 		}
-		item.change = [key, name = setting.key, values, playing](int i) {
-			recomp::set(key, values[i]);
+		item.change = [id = module.id, key = setting.key, values, playing](int i) {
+			recomp::moduleSet(id, key, values[i]);
 			if (playing && st.host.recompSetting)
-				st.host.recompSetting(name, values[i]);
+				st.host.recompSetting(key, values[i]);
 		};
 		screen.items.push_back(std::move(item));
 	}

@@ -94,11 +94,13 @@ constexpr int HostFormat = 1;
 // The exit code that asks the launcher to start the game again, in the core now chosen
 constexpr int SwitchExit = 86;
 
-// The store of what the menu picks for the recomps (key = value lines in <home>/recomp.cfg), each
-// change saved at once: core.<module> (recomp: this module is the core of the discs it plays, emulator: not),
-// <module>.<setting> (a module's settings),
-// app.version (the emulator's, which a module cannot tell by itself)
+// What the menu picks, key = value lines, each change saved at once. In <home>/recomp.cfg: core.<module> (recomp: this
+// module is the core of the discs it plays, emulator: not) and app.version (the emulator's, which a module cannot tell
+// by itself). Each module's own settings and controls are in its folder of saves, <home>/recomp-data/<module>/settings.cfg,
+// and go when it is deleted (moduleGet, moduleSet). The module never reads that file: the host hands it the values.
 std::string get(const std::string& key, const std::string& def = "");
 void set(const std::string& key, const std::string& value);
+std::string moduleGet(const std::string& id, const std::string& key, const std::string& def = "");
+void moduleSet(const std::string& id, const std::string& key, const std::string& value);
 
 }

@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <sys/stat.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -240,31 +242,54 @@ std::string get(const std::string& key, const std::string& def)
 namespace
 {
 
-// all of the store again, through a new file: never half written
-void save()
+// key = value lines, through a new file: never half written
+void writeKeys(const std::string& file, const std::map<std::string, std::string>& values)
 {
-	const std::string file = storeFile();
 	const std::string temp = file + ".new";
 	FILE *f = std::fopen(temp.c_str(), "w");
-	if (f == nullptr)
-		return;
-	for (const auto& kv : store())
-		std::fprintf(f, "%s = %s\n", kv.first.c_str(), kv.second.c_str());
-	const bool written = std::fflush(f) == 0 && fsync(fileno(f)) == 0;
-	std::fclose(f);
+	bool written = f != nullptr;
+	if (f != nullptr)
+	{
+		for (const auto& kv : values)
+			std::fprintf(f, "%s = %s\n", kv.first.c_str(), kv.second.c_str());
+		written = std::fflush(f) == 0 && fsync(fileno(f)) == 0;
+		std::fclose(f);
+	}
 	if (written)
 		std::rename(temp.c_str(), file.c_str());
 	else
+	{
 		std::remove(temp.c_str());
+		std::printf(DEADUI_APP_NAME ": %s cannot be written: the change is not kept\n", file.c_str());
+		std::fflush(stdout);
+	}
 }
 
-// what the store keeps for a module dropped: its core and its settings
+// a module's settings, each read once from its folder of saves
+std::map<std::string, std::map<std::string, std::string>> moduleValues;
+
+std::string moduleFolder(const std::string& id)
+{
+	return home() + "/recomp-data/" + id;
+}
+
+std::map<std::string, std::string>& moduleStore(const std::string& id)
+{
+	const auto found = moduleValues.find(id);
+	if (found != moduleValues.end())
+		return found->second;
+	std::map<std::string, std::string>& values = moduleValues[id];
+	for (const auto& kv : keyValues(readText(moduleFolder(id) + "/settings.cfg")))
+		values[kv.first] = kv.second;
+	return values;
+}
+
+// what is kept of a module dropped: its core here, and its settings, which went with its folder
 void forget(const std::string& id)
 {
-	std::map<std::string, std::string>& values = store();
-	for (auto it = values.begin(); it != values.end(); )
-		it = it->first == "core." + id || it->first.rfind(id + ".", 0) == 0 ? values.erase(it) : std::next(it);
-	save();
+	moduleValues.erase(id);
+	store().erase("core." + id);
+	writeKeys(storeFile(), store());
 }
 
 }	// namespace
@@ -272,7 +297,23 @@ void forget(const std::string& id)
 void set(const std::string& key, const std::string& value)
 {
 	store()[key] = value;
-	save();
+	writeKeys(storeFile(), store());
+}
+
+std::string moduleGet(const std::string& id, const std::string& key, const std::string& def)
+{
+	const std::map<std::string, std::string>& values = moduleStore(id);
+	const auto it = values.find(key);
+	return it != values.end() ? it->second : def;
+}
+
+void moduleSet(const std::string& id, const std::string& key, const std::string& value)
+{
+	std::map<std::string, std::string>& values = moduleStore(id);
+	values[key] = value;
+	mkdir((home() + "/recomp-data").c_str(), 0755);
+	mkdir(moduleFolder(id).c_str(), 0755);
+	writeKeys(moduleFolder(id) + "/settings.cfg", values);
 }
 
 bool removeTree(const std::string& path)

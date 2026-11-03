@@ -255,12 +255,12 @@ public:
 		for (const recomp::Setting& setting : module.settings)
 		{
 			args.push_back("--set");
-			args.push_back(setting.key + "=" + recomp::get(module.id + "." + setting.key, setting.def));
+			args.push_back(setting.key + "=" + recomp::moduleGet(module.id, setting.key, setting.def));
 		}
 		for (const recomp::Control& control : module.controls)
 		{
 			args.push_back("--set");
-			args.push_back("control." + control.key + "=" + recomp::get(module.id + ".control." + control.key, control.def));
+			args.push_back("control." + control.key + "=" + recomp::moduleGet(module.id, "control." + control.key, control.def));
 		}
 		std::vector<char *> argv;
 		for (std::string& arg : args)
@@ -600,7 +600,7 @@ Outcome play(std::string& problem)
 			if (!ready && std::find(lines.begin(), lines.end(), "ready") != lines.end())
 			{
 				ready = true;
-				if (recomp::get(moduleId + ".fps", "off") == "on")
+				if (recomp::moduleGet(moduleId, "fps", "off") == "on")
 					sendCounter(true);
 			}
 			if (!open)
