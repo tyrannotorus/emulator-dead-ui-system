@@ -1,3 +1,4 @@
+#include "host.h"
 #include "recomp.h"
 #include "ui.h"
 
@@ -17,7 +18,6 @@ namespace deadui::recomp
 namespace
 {
 
-constexpr const char *RunMarker = DEADUI_RUN_MARKER;
 
 std::string trim(const std::string& s)
 {
@@ -143,6 +143,8 @@ bool readManifest(const std::string& file, Module& module)
 			module.version = kv.second;
 		else if (kv.first == "exec")
 			module.exec = kv.second;
+		else if (kv.first == "host")
+			module.host = std::atoi(kv.second.c_str());
 		else if (kv.first == "disc")
 			module.discs.push_back(kv.second);
 		else if (kv.first == "setting")
@@ -198,26 +200,16 @@ std::vector<Module> installedFor(const std::string& discSha1)
 	return modules;
 }
 
-std::string runningModule()
+static std::string running;
+
+void setRunning(const std::string& id)
 {
-	char path[4096];
-	const ssize_t size = readlink("/proc/self/exe", path, sizeof(path) - 1);
-	if (size <= 0)
-		return "";
-	const std::string exe(path, (size_t)size);
-	const size_t file = exe.find_last_of('/');
-	if (file == std::string::npos || file == 0)
-		return "";
-	return exe.substr(exe.find_last_of('/', file - 1) + 1, file - exe.find_last_of('/', file - 1) - 1);
+	running = id;
 }
 
-// The game is not running in the core the player chose: said on the screen, not only in the log
-static void sayEmulated(const std::string& why)
+std::string runningModule()
 {
-	std::printf(DEADUI_APP_NAME ": %s: emulated instead\n", why.c_str());
-	std::fflush(stdout);
-	ui::putPage(why, "Playing in the emulator this time");
-	sleep(4);
+	return running;
 }
 
 void runChosen(const std::string& disc)
@@ -228,32 +220,9 @@ void runChosen(const std::string& disc)
 	});
 	if (chosen == modules.end())
 		return;
-	const Module& module = *chosen;
-	const std::string title = module.title.empty() ? module.name : module.title;
-	// the module's last run never ended (it died, or would not start): emulated this time, so the
-	// player can still reach Options
-	if (access(RunMarker, F_OK) == 0)
-	{
-		std::remove(RunMarker);
-		sayEmulated(title + " did not end its last run");
-		return;
-	}
-	if (FILE *f = std::fopen(RunMarker, "w"))
-		std::fclose(f);
-	const std::string exec = module.dir + "/" + module.exec;
-	// the start page from now until the module's own (its window takes a moment)
-	ui::putPage("Loading...", disc.substr(disc.find_last_of('/') + 1));
-	std::printf(DEADUI_APP_NAME ": %s %s, the recomp module\n", exec.c_str(), module.version.c_str());
+	const int code = host::run(*chosen, disc);
 	std::fflush(stdout);
-	execl(exec.c_str(), exec.c_str(), disc.c_str(), (char *)nullptr);
-	const std::string why = title + " cannot run (" + std::strerror(errno) + ")";
-	std::remove(RunMarker);
-	sayEmulated(why);
-}
-
-void runEnded()
-{
-	std::remove(RunMarker);
+	std::exit(code);
 }
 
 std::string get(const std::string& key, const std::string& def)

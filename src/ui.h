@@ -108,6 +108,7 @@ enum class Core { Emulator, Recomp };
 struct Host
 {
 	Core core = Core::Emulator;					// the core this process plays the game with
+	bool modulePlaying = false;					// a hosted module's process is there, paused (not one that has stopped)
 	std::string disc;							// the disc played (its recomp module found by it)
 	Item save;									// the emulator's save states (a module: none, disabled)
 	Item load;
@@ -166,6 +167,9 @@ void putPage(const std::string& line, const std::string& under);
 // a small label as BGRA pixels, its size in width and height (none without the font): the frame
 // counter, as the emulator's Show FPS draws it (its colour on a dark box)
 std::vector<u32> label(const std::string& text, int& width, int& height);
+// the label's characters, for a process with no fonts to compose (a hosted module): 32-bit values, its padding and
+// the characters' height, how many, then for each its code, its width and its pixels. False if not written.
+bool writeLabelCells(const std::string& file, const std::string& chars);
 
 // a page's line in white and text under it in grey, centered on black
 void drawPage(const std::string& line, const std::string& under);

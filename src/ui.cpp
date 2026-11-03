@@ -887,7 +887,7 @@ void downloadOver()
 	pop();
 	refreshStore(name);
 	// the module playing now goes on as it started
-	if (st.downloading.id == st.running)
+	if (st.downloading.id == st.running && st.host.modulePlaying)
 		message(name + " is updated: it plays from your game's next start.");
 	else
 		message(name + (st.updating ? " is updated." : " is installed."));
@@ -1695,6 +1695,39 @@ std::vector<u32> label(const std::string& text, int& width, int& height)
 	// the emulator's: yellow at 70% over its dark box
 	c.text(font, text, pad, pad + font.ascent(), 0xbcbc0a);
 	return std::vector<u32>(c.data(), c.data() + (size_t)width * height);
+}
+
+bool writeLabelCells(const std::string& file, const std::string& chars)
+{
+	if (!loadFonts())
+		return false;
+	Font& font = loaded->tiny;
+	FILE *f = std::fopen(file.c_str(), "wb");
+	if (f == nullptr)
+	{
+		std::printf(DEADUI_APP_NAME ": label cells: cannot write %s: %s\n", file.c_str(), std::strerror(errno));
+		return false;
+	}
+	const u32 height = (u32)font.lineHeight();
+	const u32 head[3] = { (u32)S(2), height, (u32)chars.size() };
+	bool written = std::fwrite(head, sizeof(head[0]), 3, f) == 3;
+	for (const char ch : chars)
+	{
+		const std::string text(1, ch);
+		const int width = std::max(font.measure(text), 1);
+		Canvas c;
+		c.resize(width, (int)height);
+		c.clear(0x202020);
+		// as label: the emulator's yellow at 70% over its dark box
+		c.text(font, text, 0, font.ascent(), 0xbcbc0a);
+		const u32 cell[2] = { (u32)(unsigned char)ch, (u32)width };
+		written = written && std::fwrite(cell, sizeof(cell[0]), 2, f) == 2
+				&& std::fwrite(c.data(), sizeof(u32), (size_t)width * height, f) == (size_t)width * height;
+	}
+	std::fclose(f);
+	if (!written)
+		std::printf(DEADUI_APP_NAME ": label cells: %s not fully written\n", file.c_str());
+	return written;
 }
 
 void drawMessage(Font& font, const std::string& message, int x, int y, int w, int h)
