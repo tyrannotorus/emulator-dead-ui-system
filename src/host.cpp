@@ -204,6 +204,36 @@ private:
 	int hatY = 0;
 };
 
+// the input just pressed, by the labels on the device; none for a release, and for MENU, which is the menu's
+std::string pressedInput(const input_event& ev)
+{
+	if (ev.type == EV_KEY && ev.value == 1)
+		switch (ev.code)
+		{
+		case BTN_EAST: return "A";
+		case BTN_SOUTH: return "B";
+		case BTN_WEST: return "X";
+		case BTN_NORTH: return "Y";
+		case BTN_TL: return "L1";
+		case BTN_TR: return "R1";
+		case BTN_SELECT: return "SELECT";
+		case BTN_START: return "START";
+		case BTN_THUMBL: return "FN1";
+		case BTN_THUMBR: return "FN2";
+		default: return "";
+		}
+	if (ev.type == EV_ABS && ev.value != 0)
+		switch (ev.code)
+		{
+		case ABS_HAT0X: return ev.value < 0 ? "LEFT" : "RIGHT";
+		case ABS_HAT0Y: return ev.value < 0 ? "UP" : "DOWN";
+		case ABS_Z: return ev.value > 0 ? "L2" : "";
+		case ABS_RZ: return ev.value > 0 ? "R2" : "";
+		default: return "";
+		}
+	return "";
+}
+
 enum class Outcome { Resume, Quit, Switch, Stopped };
 
 // a module's process and the pipes to it
@@ -226,6 +256,11 @@ public:
 		{
 			args.push_back("--set");
 			args.push_back(setting.key + "=" + recomp::get(module.id + "." + setting.key, setting.def));
+		}
+		for (const recomp::Control& control : module.controls)
+		{
+			args.push_back("--set");
+			args.push_back("control." + control.key + "=" + recomp::get(module.id + ".control." + control.key, control.def));
 		}
 		std::vector<char *> argv;
 		for (std::string& arg : args)
@@ -478,7 +513,11 @@ Outcome menuLoop(const std::vector<u8>& frame, int width, int height, bool playi
 		poll(f, 2, screen.takeShown() ? 0 : 16);
 		input_event ev;
 		while (pad >= 0 && read(pad, &ev, sizeof(ev)) == (ssize_t)sizeof(ev))
-			if (!ui::pageReadsPad())
+			if (ui::pageReadsPad())
+				continue;
+			else if (ui::awaitingControl())
+				ui::controlPressed(pressedInput(ev));
+			else
 				toMenu.press(ev);
 		if (playing && !ended && (f[1].revents & (POLLIN | POLLHUP)))
 		{

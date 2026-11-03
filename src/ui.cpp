@@ -120,6 +120,7 @@ struct State
 	std::function<void()> yes;
 	std::function<void()> no;
 	bool awaiting = false;			// a Binding row waiting for a control
+	std::function<void(const std::string&)> controlAnswer;	// a module's row: what the press does
 	// work under way: its page (or text over the page, busyOver) shown, then fn run
 	std::function<void()> work;
 	std::string workLine;
@@ -657,6 +658,7 @@ void reset()
 	st.sliding = false;
 	clearMessage();
 	st.awaiting = false;
+	st.controlAnswer = nullptr;
 	st.work = nullptr;
 	st.hostPage = nullptr;
 	st.result = Result::Open;
@@ -714,6 +716,86 @@ const recomp::Module *chosenModule()
 	return nullptr;
 }
 
+// what a module's control is on now: the pad's inputs, comma separated, or NONE
+std::string controlInputs(const recomp::Module& module, const recomp::Control& control)
+{
+	return recomp::get(module.id + ".control." + control.key, control.def);
+}
+
+// kept, and at once in the module it is for, if that one is playing
+void keepControl(const recomp::Module& module, const recomp::Control& control, const std::string& inputs)
+{
+	recomp::set(module.id + ".control." + control.key, inputs);
+	if (module.id == st.running && st.host.recompSetting)
+		st.host.recompSetting("control." + control.key, inputs);
+}
+
+void refreshControls(Screen& screen, const recomp::Module& module)
+{
+	for (size_t i = 0; i < screen.items.size() && i < module.controls.size(); i++)
+	{
+		std::string shown = controlInputs(module, module.controls[i]);
+		for (size_t comma; (comma = shown.find(',')) != std::string::npos; )
+			shown.replace(comma, 1, " / ");
+		screen.items[i].values = { shown };
+		screen.items[i].value = 0;
+	}
+}
+
+// a press taken for a control: it leaves any other control that had it, as in the emulator's Controls
+void bindControl(const recomp::Module& module, size_t index, const std::string& input)
+{
+	for (size_t i = 0; i < module.controls.size(); i++)
+	{
+		if (i == index)
+			continue;
+		const std::string now = controlInputs(module, module.controls[i]);
+		std::string rest;
+		bool had = false;
+		for (size_t start = 0; start <= now.size(); )
+		{
+			const size_t comma = std::min(now.find(',', start), now.size());
+			const std::string one = now.substr(start, comma - start);
+			if (one == input)
+				had = true;
+			else
+				rest += (rest.empty() ? "" : ",") + one;
+			start = comma + 1;
+		}
+		if (had)
+			keepControl(module, module.controls[i], rest.empty() ? "NONE" : rest);
+	}
+	keepControl(module, module.controls[index], input);
+	refreshControls(page(), module);
+	move(page(), 1);
+}
+
+// a module's own controls, as its manifest declares them: nothing here is the emulator's
+Screen moduleControlsScreen(const recomp::Module& module)
+{
+	Screen screen;
+	screen.title = "Controls";
+	const std::string label = moduleName(module.title, module.name) + " " + module.version;
+	screen.status = [label] { return label; };
+	for (size_t i = 0; i < module.controls.size(); i++)
+	{
+		Item item;
+		item.name = module.controls[i].name;
+		item.row = Row::Binding;
+		item.confirm = [module, i] {
+			st.controlAnswer = [module, i](const std::string& input) { bindControl(module, i, input); };
+			awaitControl(true);
+		};
+		item.clear = [module, i] {
+			keepControl(module, module.controls[i], "NONE");
+			refreshControls(page(), module);
+		};
+		screen.items.push_back(std::move(item));
+	}
+	refreshControls(screen, module);
+	return screen;
+}
+
 // Options' rows for a module: its settings as its manifest declares them, kept in the store; the module's name and
 // version at the bottom left, whatever is selected. Show FPS is always the first row, in every module; a module
 // does not declare it. A setting applies at once only in the module it is for, if that one is playing. Getting a
@@ -758,6 +840,8 @@ void addModuleOptions(Screen& screen, const recomp::Module& module)
 		};
 		screen.items.push_back(std::move(item));
 	}
+	if (!module.controls.empty())
+		screen.items.push_back(entry("Controls", "", [module] { push(moduleControlsScreen(module)); }));
 }
 
 // a page of the emulator's settings (Console, Video, Audio), each kept as it changes
@@ -1506,6 +1590,19 @@ void awaitControl(bool waiting)
 bool awaitingControl()
 {
 	return st.awaiting;
+}
+
+void controlPressed(const std::string& input)
+{
+	static const std::vector<std::string> inputs { "A", "B", "X", "Y", "L1", "R1", "L2", "R2", "SELECT", "START", "FN1", "FN2",
+		"UP", "DOWN", "LEFT", "RIGHT" };
+	if (!st.controlAnswer || std::find(inputs.begin(), inputs.end(), input) == inputs.end())
+		return;
+	const std::function<void(const std::string&)> answer = std::move(st.controlAnswer);
+	st.controlAnswer = nullptr;
+	st.awaiting = false;
+	st.dirty = true;
+	answer(input);
 }
 
 void button(Button code, bool pressed)

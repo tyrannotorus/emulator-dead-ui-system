@@ -147,6 +147,12 @@ bool readManifest(const std::string& file, Module& module)
 			module.host = std::atoi(kv.second.c_str());
 		else if (kv.first == "disc")
 			module.discs.push_back(kv.second);
+		else if (kv.first == "control")
+		{
+			const std::vector<std::string> fields = split(kv.second, '|');
+			if (fields.size() == 3)
+				module.controls.push_back({ fields[0], fields[1], fields[2] });
+		}
 		else if (kv.first == "setting")
 		{
 			const std::vector<std::string> fields = split(kv.second, '|');

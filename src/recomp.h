@@ -13,6 +13,8 @@
 //   title = My Game                 what the menu calls it
 //   setting = scale | Resolution | 1=640x480, panel=1024x768 | panel
 //                                   each setting, shown in Options: key | name | value=label, ... | default
+//   control = a | A Button | A      each control the player may remap, on its Controls page: key | name | default,
+//                                   the pad's inputs by their labels, comma separated, or NONE
 //
 // A module has no settings of its own in the game: it declares them here, Options shows them, the
 // store below keeps them, and the host hands them to it.
@@ -38,6 +40,12 @@ struct Setting
 	std::vector<std::pair<std::string, std::string>> values;	// value, label
 	std::string def;
 };
+struct Control
+{
+	std::string key;
+	std::string name;
+	std::string def;
+};
 struct Module
 {
 	std::string id;
@@ -48,6 +56,7 @@ struct Module
 	std::string dir;
 	std::vector<std::string> discs;
 	std::vector<Setting> settings;
+	std::vector<Control> controls;
 	int host = 0;
 };
 // a file's text; empty if it cannot be read

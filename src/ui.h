@@ -147,6 +147,8 @@ void busy(const std::string& text, std::function<void()> fn);
 // a Binding row waiting for a control (the host reads it: the menu's buttons are not)
 void awaitControl(bool waiting);
 bool awaitingControl();
+// a press for a module's Controls row waiting for one, by the labels on the device; anything else is ignored
+void controlPressed(const std::string& input);
 void button(Button button, bool pressed);
 
 // Restart: the game again from its start (two players); Switch: in the other core (its choice stored)
