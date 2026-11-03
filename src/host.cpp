@@ -345,6 +345,21 @@ public:
 		std::fflush(stdout);
 	}
 
+	// it did not answer: no point asking it to quit
+	void stopHung()
+	{
+		if (pid <= 0)
+			return;
+		kill(pid, SIGTERM);
+		kill(pid, SIGCONT);
+		if (!waitEnd(TermWaitMs))
+		{
+			std::printf(DEADUI_APP_NAME ": host: the module did not end: SIGKILL\n");
+			kill(pid, SIGKILL);
+		}
+		reap();
+	}
+
 	static long long now()
 	{
 		timespec t {};
@@ -562,7 +577,7 @@ Outcome play(std::string& problem)
 			problem = moduleTitle + " did not respond";
 			std::printf(DEADUI_APP_NAME ": host: the module did not pause in %d ms\n", PauseWaitMs);
 			std::fflush(stdout);
-			child.stop();
+			child.stopHung();
 			return Outcome::Stopped;
 		}
 		std::vector<u8> frame;
