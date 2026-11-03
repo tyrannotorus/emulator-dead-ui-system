@@ -69,6 +69,15 @@ public:
 		if (ioctl(fd, FBIOPAN_DISPLAY, &var) != 0)
 			std::printf(DEADUI_APP_NAME ": host: cannot show the menu's page: %s\n", std::strerror(errno));
 		page = (page + 1) % Pages;
+		shown = true;
+	}
+
+	// a page has gone up since last asked: it waited for its vblank, so the menu's loop need not wait as well
+	bool takeShown()
+	{
+		const bool was = shown;
+		shown = false;
+		return was;
 	}
 
 	void end(After) override {}
@@ -136,6 +145,7 @@ private:
 	}
 
 	int fd = -1;
+	bool shown = false;
 	unsigned char *memory = nullptr;
 	size_t size = 0;
 	u32 page = 0;
@@ -462,7 +472,7 @@ Outcome menuLoop(const std::vector<u8>& frame, int width, int height, bool playi
 		if (stopAsked)
 			ui::finish(ui::Result::Quit);
 		pollfd f[2] = { { pad, POLLIN, 0 }, { playing && !ended ? child.status() : -1, POLLIN, 0 } };
-		poll(f, 2, 16);
+		poll(f, 2, screen.takeShown() ? 0 : 16);
 		input_event ev;
 		while (pad >= 0 && read(pad, &ev, sizeof(ev)) == (ssize_t)sizeof(ev))
 			toMenu.press(ev);
