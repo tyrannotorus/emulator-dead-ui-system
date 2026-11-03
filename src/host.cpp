@@ -34,6 +34,8 @@ constexpr int PauseWaitMs = 5000;
 constexpr int QuitWaitMs = 8000;
 constexpr int TermWaitMs = 3000;
 constexpr int ReleaseWaitMs = 1000;
+constexpr int HungWaitMs = 1000;
+constexpr int CannotRun = 127;	// the exit of a child whose exec failed
 
 // the pages of fb0 this process draws on: under the module's own
 constexpr u32 FirstPage = 14, Pages = 2;
@@ -241,7 +243,7 @@ public:
 			execv(exec.c_str(), argv.data());
 			std::printf(DEADUI_APP_NAME ": host: %s cannot run: %s\n", exec.c_str(), std::strerror(errno));
 			std::fflush(stdout);
-			_exit(127);
+			_exit(CannotRun);
 		}
 		close(toChild[0]);
 		close(fromChild[1]);
@@ -316,6 +318,8 @@ public:
 			std::snprintf(text, sizeof(text), "signal %d", WTERMSIG(code));
 			return text;
 		}
+		if (WIFEXITED(code) && WEXITSTATUS(code) == CannotRun)
+			return "it cannot run";
 		if (WIFEXITED(code) && WEXITSTATUS(code) != 0)
 		{
 			char text[64];
@@ -354,7 +358,7 @@ public:
 			return;
 		kill(pid, SIGTERM);
 		kill(pid, SIGCONT);
-		if (!waitEnd(TermWaitMs))
+		if (!waitEnd(HungWaitMs))
 		{
 			std::printf(DEADUI_APP_NAME ": host: the module did not end: SIGKILL\n");
 			kill(pid, SIGKILL);
