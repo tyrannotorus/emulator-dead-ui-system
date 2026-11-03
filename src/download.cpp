@@ -44,11 +44,6 @@ size_t collect(char *data, size_t size, size_t count, void *context)
 	return size * count;
 }
 
-std::string catalogFile()
-{
-	return home() + "/recomp-catalog.cfg";
-}
-
 // download.h
 std::vector<StoreEntry> parseCatalog(const std::string& text)
 {
@@ -83,29 +78,13 @@ std::vector<StoreEntry> parseCatalog(const std::string& text)
 			entry.discs.push_back(kv.second);
 	}
 	// its ids name folders
+	const size_t all = entries.size();
 	entries.erase(std::remove_if(entries.begin(), entries.end(), [](const StoreEntry& entry) {
 		return entry.id.empty() || entry.id[0] == '.' || entry.id.find('/') != std::string::npos;
 	}), entries.end());
+	if (entries.size() != all)
+		std::printf(DEADUI_APP_NAME ": store list: %zu of %zu entries dropped: bad ids\n", all - entries.size(), all);
 	return entries;
-}
-
-// for modules built when the store only read this file; through a new file: never half written
-void saveCatalog(const std::string& text)
-{
-	const std::string file = catalogFile();
-	if (readText(file) == text)
-		return;
-	const std::string temp = file + ".new";
-	FILE *f = std::fopen(temp.c_str(), "w");
-	if (f == nullptr)
-		return;
-	std::fputs(text.c_str(), f);
-	const bool written = std::fflush(f) == 0 && fsync(fileno(f)) == 0;
-	std::fclose(f);
-	if (written)
-		std::rename(temp.c_str(), file.c_str());
-	else
-		std::remove(temp.c_str());
 }
 
 int stopWhen(void *cancel, curl_off_t, curl_off_t, curl_off_t, curl_off_t)
@@ -117,7 +96,10 @@ std::string fetchText(const std::string& address, const std::atomic<bool>& cance
 {
 	CURL *curl = session(address);
 	if (curl == nullptr)
+	{
+		std::printf(DEADUI_APP_NAME ": %s: no curl session\n", address.c_str());
 		return "";
+	}
 	std::string text;
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, collect);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &text);
@@ -126,10 +108,12 @@ std::string fetchText(const std::string& address, const std::atomic<bool>& cance
 	curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, stopWhen);
 	curl_easy_setopt(curl, CURLOPT_XFERINFODATA, const_cast<std::atomic<bool> *>(&cancel));
 	const CURLcode res = curl_easy_perform(curl);
+	long http = 0;
+	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http);
 	curl_easy_cleanup(curl);
 	if (res != CURLE_OK)
 	{
-		std::printf(DEADUI_APP_NAME ": %s: %s\n", address.c_str(), curl_easy_strerror(res));
+		std::printf(DEADUI_APP_NAME ": %s: curl error %d (%s), HTTP %ld\n", address.c_str(), (int)res, curl_easy_strerror(res), http);
 		return "";
 	}
 	return text;
@@ -276,11 +260,19 @@ bool storeCatalog(std::vector<StoreEntry>& entries, const std::atomic<bool>& can
 {
 	entries.clear();
 	const char *test = std::getenv("DEADUI_TEST_CATALOG");
-	const std::string text = fetchText(test != nullptr && *test != '\0' ? test : DEADUI_STORE_URL, cancel);
+	const bool testing = test != nullptr && *test != '\0';
+	const std::string address = testing ? test : DEADUI_STORE_URL;
+	if (testing)
+		std::printf(DEADUI_APP_NAME ": store list: TEST address\n");
+	const std::string text = fetchText(address, cancel);
 	if (text.compare(0, 8, "store = ") != 0)	// not fetched, or something else's page
+	{
+		std::printf(DEADUI_APP_NAME ": store list: NOT loaded from %s: %s (%zu bytes)\n", address.c_str(),
+				cancel ? "cancelled" : text.empty() ? "nothing fetched" : "not a store list", text.size());
 		return false;
-	saveCatalog(text);
+	}
 	entries = parseCatalog(text);
+	std::printf(DEADUI_APP_NAME ": store list: loaded from %s: %zu modules\n", address.c_str(), entries.size());
 	return true;
 }
 

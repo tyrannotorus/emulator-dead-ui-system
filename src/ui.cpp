@@ -153,6 +153,7 @@ struct State
 	std::vector<recomp::StoreEntry> storeCache;	// the list fetched, kept in memory for this run
 	bool storeCached = false;
 	bool storeAwaitsNetwork = false;	// an empty store's page, to fetch the list when the network is back
+	bool storeFetchFailed = false;		// the last try at the list, said on the store's page
 	std::thread storeLoad;			// reading it, its page saying so
 	std::atomic<bool> storeLoaded { false };
 	std::atomic<bool> cancelStoreLoad { false };
@@ -1160,6 +1161,12 @@ Screen moduleScreen(const StoreModule& m)
 
 Screen currentStore();
 
+// a list that could not be fetched is said, in place of the network's status
+std::string storeStatus()
+{
+	return st.network && st.storeFetchFailed ? "Store could not be loaded" : networkStatus();
+}
+
 // the store's page: what is installed, first and with a download icon what has an update, and what can be
 // downloaded, each under its section's name unless it has nothing; every module opens its own page. The cursor on this game's
 // module if it has one.
@@ -1167,7 +1174,7 @@ Screen storeScreen()
 {
 	Screen screen;
 	screen.title = "Recomp Store";
-	screen.status = networkStatus;
+	screen.status = storeStatus;
 	std::vector<StoreModule> modules = storeModules();
 	std::stable_partition(modules.begin(), modules.end(), hasUpdate);
 	const char *const sections[] = { "Installed", "Downloadable" };
@@ -1196,11 +1203,12 @@ Screen storeScreen()
 	if (screen.items.empty())
 	{
 		screen.buttons = [] { return Buttons { { "B", "BACK" } }; };
-		// nothing installed and no list: says so, and fetches one when the network is back
-		st.storeAwaitsNetwork = false;
+		// nothing to show: says why, and fetches the list when the network is back
+		st.storeAwaitsNetwork = !st.network;
 		screen.body = [](int ox) {
-			if (!st.network || !st.storeCached)
-				drawMessage(loaded->large, "No Internet Connection", ox, 0, st.canvas.width(), st.canvas.height());
+			const char *why = !st.network ? "No Internet Connection"
+					: st.storeFetchFailed ? "Store Could Not Be Loaded" : "No Modules Available";
+			drawMessage(loaded->large, why, ox, 0, st.canvas.width(), st.canvas.height());
 		};
 		screen.tick = [] {
 			if (!st.network)
@@ -1263,6 +1271,7 @@ Screen loadingStoreScreen()
 			return;
 		endStoreLoad();
 		st.store = std::move(st.storeFetched);
+		st.storeFetchFailed = !st.storeFetchedOk;
 		if (st.storeFetchedOk)
 		{
 			st.storeCache = st.store;

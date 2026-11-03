@@ -211,6 +211,15 @@ std::string runningModule()
 	return exe.substr(exe.find_last_of('/', file - 1) + 1, file - exe.find_last_of('/', file - 1) - 1);
 }
 
+// The game is not running in the core the player chose: said on the screen, not only in the log
+static void sayEmulated(const std::string& why)
+{
+	std::printf(DEADUI_APP_NAME ": %s: emulated instead\n", why.c_str());
+	std::fflush(stdout);
+	ui::putPage(why, "Playing in the emulator this time");
+	sleep(4);
+}
+
 void runChosen(const std::string& disc)
 {
 	const std::vector<Module> modules = installedFor(chdSha1(disc));
@@ -220,12 +229,13 @@ void runChosen(const std::string& disc)
 	if (chosen == modules.end())
 		return;
 	const Module& module = *chosen;
+	const std::string title = module.title.empty() ? module.name : module.title;
 	// the module's last run never ended (it died, or would not start): emulated this time, so the
 	// player can still reach Options
 	if (access(RunMarker, F_OK) == 0)
 	{
 		std::remove(RunMarker);
-		std::printf(DEADUI_APP_NAME ": the recomp module did not end its last run: emulated instead\n");
+		sayEmulated(title + " did not end its last run");
 		return;
 	}
 	if (FILE *f = std::fopen(RunMarker, "w"))
@@ -236,8 +246,9 @@ void runChosen(const std::string& disc)
 	std::printf(DEADUI_APP_NAME ": %s %s, the recomp module\n", exec.c_str(), module.version.c_str());
 	std::fflush(stdout);
 	execl(exec.c_str(), exec.c_str(), disc.c_str(), (char *)nullptr);
-	std::printf(DEADUI_APP_NAME ": %s cannot run (%s): emulated instead\n", exec.c_str(), std::strerror(errno));
+	const std::string why = title + " cannot run (" + std::strerror(errno) + ")";
 	std::remove(RunMarker);
+	sayEmulated(why);
 }
 
 void runEnded()
@@ -336,6 +347,8 @@ bool deleteModule(const std::string& id)
 
 void tidy()
 {
+	// the list earlier versions kept on the card: a module built then would take it for the store's
+	std::remove((home() + "/recomp-catalog.cfg").c_str());
 	const std::string dir = modulesDir();
 	DIR *d = opendir(dir.c_str());
 	if (d == nullptr)
