@@ -168,6 +168,8 @@ bool showPage(std::function<void()> draw);
 // The emulator handing the game to a recomp module, or back. Stays until the next one draws.
 void putPage(const std::string& line, const std::string& under);
 
+// the font itself, as a TrueType file in the binary: for anything else the program draws text with
+void fontData(const unsigned char *&data, size_t& size);
 // a counter's characters, for a process with no fonts to compose (a hosted module): 32-bit values, its padding and
 // the characters' height, how many, then for each its code, its width and its pixels. False if not written.
 bool writeLabelCells(const std::string& file, const std::string& chars);
