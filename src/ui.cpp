@@ -789,7 +789,7 @@ Screen optionsScreen();
 // another core picked, on leaving Options: the game starts again in it, or the core goes back to the one playing
 void askCoreRestart()
 {
-	ask("Changing a core requires a restart", "OKAY", [] {
+	ask("Switching cores requires a restart", "OKAY", [] {
 		keepChosen();
 		finish(Result::Switch);
 	}, [] {
