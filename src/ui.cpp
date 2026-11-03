@@ -705,12 +705,6 @@ void keepChosen()
 	}
 }
 
-// Continue, or Restart with another core picked: the first page's first row
-void nameContinue()
-{
-	st.screens.front().items.front().name = st.chosen != st.running ? "Restart" : "Continue";
-}
-
 // the module Core is on; none: the emulator
 const recomp::Module *chosenModule()
 {
@@ -833,15 +827,28 @@ Screen optionsScreen()
 		core.values.push_back(moduleName(module.title, module.name));
 	}
 	core.available = moduleInstalled;
-	// only picked here: the main page's Continue becomes Restart, which starts the game again in it; leaving
-	// the menu otherwise puts the game's own core back (frame())
+	// only picked here: leaving this page settles it
 	core.change = [](int value) {
 		st.chosen = value > 0 ? st.modules[value - 1].id : "";
-		nameContinue();
 		showCoreOptions(page());
 	};
 	screen.items.push_back(std::move(core));
 	showCoreOptions(screen);
+	// with another core picked: the game starts again in it, or the core goes back to the one playing
+	screen.back = [] {
+		if (st.chosen == st.running)
+		{
+			pop();
+			return;
+		}
+		ask("Changing a core requires a restart", "OKAY", [] {
+			keepChosen();
+			finish(Result::Switch);
+		}, [] {
+			st.chosen = st.running;
+			page() = optionsScreen();
+		});
+	};
 	return screen;
 }
 
@@ -956,7 +963,7 @@ void getModule(const recomp::StoreEntry& entry, bool updating)
 
 // a module deleted, and everything of it, its saves too. At once, unless it is the module playing now:
 // that one is only marked, and the game starts again emulated; the emulator deletes it as it starts
-// (recomp::tidy). Were it picked in Options but not restarted into, the core playing is the one picked again.
+// (recomp::tidy).
 void removeModule(const recomp::Module& module, const std::string& name)
 {
 	if (module.id == st.running)
@@ -969,9 +976,6 @@ void removeModule(const recomp::Module& module, const std::string& name)
 	}
 	const bool deleted = recomp::deleteModule(module.id);
 	st.modules = recomp::installedFor(st.discSha1);
-	if (module.id == st.chosen)
-		st.chosen = st.running;
-	nameContinue();
 	pop();
 	refreshStore(name);
 	message(deleted ? name + " is deleted." : name + "\ncould not be fully deleted.\n" DEADUI_APP_NAME " retries at its next start.");
@@ -1320,16 +1324,7 @@ Screen mainScreen(const std::string& title, Host host)
 	screen.title = title;
 	screen.back = [] { finish(Result::Resume); };
 	screen.status = networkStatus;
-	// Continue; Restart with another core picked in Options: the game starts again in it
-	screen.items.push_back(entry("Continue", "", [] {
-		if (st.chosen == st.running)
-			finish(Result::Resume);
-		else
-		{
-			keepChosen();
-			finish(Result::Switch);
-		}
-	}));
+	screen.items.push_back(entry("Continue", "", [] { finish(Result::Resume); }));
 	for (Item *item : { &host.save, &host.load })
 	{
 		if (item->name.empty())
@@ -1527,12 +1522,6 @@ Result frame()
 {
 	if (!st.open)
 		return Result::Resume;
-	// another core picked in Options: back to the game (B, MENU) puts the game's own core back; quitting
-	// keeps the one picked for the game's next start (Restart starts the game again in it: mainScreen)
-	if (st.result == Result::Resume)
-		st.chosen = st.running;
-	if (st.result == Result::Quit && st.chosen != st.running)
-		keepChosen();
 	// work once its screen is up
 	if (st.work && !st.dirty)
 	{

@@ -121,7 +121,7 @@ struct Host
 	// a recomp setting changed (key, value): a module applies it, if it can while playing
 	std::function<void(const std::string&, const std::string&)> recompSetting;
 };
-// the first page: Continue (Restart once Options picks another core), Save, Load, Options, Recomp Store, Quit, the
+// the first page: Continue, Save, Load, Options, Recomp Store, Quit, the
 // network's status at the bottom left
 Screen mainScreen(const std::string& title, Host host);
 
