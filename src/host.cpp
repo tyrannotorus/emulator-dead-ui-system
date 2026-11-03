@@ -473,7 +473,7 @@ Outcome menuLoop(const std::vector<u8>& frame, int width, int height, bool playi
 Outcome play(std::string& problem)
 {
 	long wakes = 0;
-	const unsigned long long cpuAtStart = cpuMicroseconds();
+	unsigned long long cpuAtStart = cpuMicroseconds();
 	bool ready = false;
 	for (;;)
 	{
@@ -549,6 +549,7 @@ Outcome play(std::string& problem)
 		case Outcome::Resume:
 			child.send("resume");
 			wakes = 0;
+			cpuAtStart = cpuMicroseconds();
 			break;
 		case Outcome::Stopped:
 		{
