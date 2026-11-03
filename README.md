@@ -1,7 +1,7 @@
 # Dead UI System
 
-The menu, start page and recomp module store shared by emulators for NextUI handhelds and their recomp
-modules. Drawn on the CPU, so that it needs nothing of the host's renderer.
+The menu, start page, recomp module store and module host shared by emulators for NextUI handhelds. Drawn on
+the CPU, so that it needs nothing of the renderer. Recomp modules do not link it: the emulator hosts them (`src/host.h`).
 
 ## Use
 
@@ -22,7 +22,7 @@ file at `DEADUI_STORE_URL`, in the format `download.h` describes.
 
 ## Files
 
-- `src/`: pages, drawing, the store, downloads and installed modules
+- `src/`: pages, drawing, the store, downloads, installed modules and the module host
 - `options/`: Emulator Options' settings for each console
 - `toolchain/`: the tg5040 cross toolchain (`toolchain.sh`, `devlibs.sh`, `tg5040.cmake`)
 - `third_party/`: FreeType (submodule) and nlohmann/json

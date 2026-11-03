@@ -68,8 +68,8 @@ bool removeTree(const std::string& path);
 
 // Deleting a module takes everything of it: its folder, its data (<home>/recomp-data/<id>/: saves,
 // settings, cache) and what the store keeps for it. It is marked first (<home>/recomp/<id>.delete) and
-// the mark goes last, so a deletion cut short is finished by tidy(). A module deleting itself while it
-// runs only marks itself: tidy() deletes it at the emulator's next start, once it has ended.
+// the mark goes last, so a deletion cut short is finished by tidy(). The module being hosted
+// is only marked: tidy() deletes it at the emulator's next start, once it has ended.
 void markForDeletion(const std::string& id);
 bool deleteModule(const std::string& id);	// true if all of it is gone
 // At the emulator's start, before anything: the deletions marked done, and what an install cut short left

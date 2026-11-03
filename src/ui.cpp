@@ -668,7 +668,7 @@ bool moduleInstalled()
 	return !st.modules.empty();
 }
 
-// a module as the player is told of it: its title (Rez Recompiled), or with none declared its name as a
+// a module as the player is told of it: its title, or with none declared its name as a
 // module. Never the game's title alone, which reads as the game.
 std::string moduleName(const std::string& title, const std::string& name)
 {
