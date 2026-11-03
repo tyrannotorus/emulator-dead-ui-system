@@ -168,8 +168,6 @@ bool showPage(std::function<void()> draw);
 // The emulator handing the game to a recomp module, or back. Stays until the next one draws.
 void putPage(const std::string& line, const std::string& under);
 
-// the font itself, as a TrueType file in the binary: for anything else the program draws text with
-void fontData(const unsigned char *&data, size_t& size);
 // small text on its dark box as BGRA pixels, its size in width and height (none without the font): Show FPS and the
 // emulator's messages, for a frame of this height; built from the same characters a module's counter is
 std::vector<u32> label(const std::string& text, int frameHeight, int& width, int& height);

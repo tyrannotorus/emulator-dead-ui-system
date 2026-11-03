@@ -1799,12 +1799,6 @@ void drawPage(const std::string& line, const std::string& under)
 	}
 }
 
-void fontData(const unsigned char *&data, size_t& size)
-{
-	data = deadui_font;
-	size = (size_t)(deadui_font_end - deadui_font);
-}
-
 namespace
 {
 
