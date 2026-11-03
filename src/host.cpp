@@ -33,6 +33,7 @@ volatile std::sig_atomic_t stopAsked = 0;
 constexpr int PauseWaitMs = 5000;
 constexpr int QuitWaitMs = 8000;
 constexpr int TermWaitMs = 3000;
+constexpr int ReleaseWaitMs = 1000;
 
 // the pages of fb0 this process draws on: under the module's own
 constexpr u32 FirstPage = 14, Pages = 2;
@@ -469,6 +470,33 @@ Outcome menuLoop(const std::vector<u8>& frame, int width, int height, bool playi
 	}
 }
 
+// A button still down reaches the game the moment it resumes, the one that chose Continue above all: the
+// resume waits for them to be let go, for this long at most.
+void waitReleased(int ms)
+{
+	const long long until = Child::now() + ms;
+	while (pad >= 0)
+	{
+		unsigned char keys[KEY_MAX / 8 + 1] = {};
+		input_absinfo x {}, y {};
+		const bool key = ioctl(pad, EVIOCGKEY(sizeof(keys)), keys) >= 0
+				&& std::any_of(keys, keys + sizeof(keys), [](unsigned char bits) { return bits != 0; });
+		const bool hat = (ioctl(pad, EVIOCGABS(ABS_HAT0X), &x) >= 0 && x.value != 0)
+				|| (ioctl(pad, EVIOCGABS(ABS_HAT0Y), &y) >= 0 && y.value != 0);
+		if (!key && !hat)
+			return;
+		if (Child::now() >= until)
+		{
+			std::printf(DEADUI_APP_NAME ": host: a button is still down after %d ms: resuming with it down\n", ms);
+			return;
+		}
+		pollfd f { pad, POLLIN, 0 };
+		poll(&f, 1, 10);
+		input_event ev;
+		while (read(pad, &ev, sizeof(ev)) == (ssize_t)sizeof(ev)) {}
+	}
+}
+
 // the module's run: the host asleep on the pad and the module's pipe until one of them has something
 Outcome play(std::string& problem)
 {
@@ -549,6 +577,7 @@ Outcome play(std::string& problem)
 		switch (menuLoop(frame, width, height, true, ""))
 		{
 		case Outcome::Resume:
+			waitReleased(ReleaseWaitMs);
 			child.send("resume");
 			std::printf(DEADUI_APP_NAME ": host: resume sent at %lld ms\n", Child::now());
 			std::fflush(stdout);
