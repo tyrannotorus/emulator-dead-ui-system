@@ -109,7 +109,6 @@ enum class Core { Emulator, Recomp };
 struct Host
 {
 	Core core = Core::Emulator;					// the core this process plays the game with
-	bool modulePlaying = false;					// a hosted module's process is there, paused (not one that has stopped)
 	std::string disc;							// the disc played (its recomp module found by it)
 	Item save;									// the emulator's save states (a module: none, disabled)
 	Item load;
@@ -138,6 +137,8 @@ void move(Screen& screen, int step);	// the selected row, to the next enabled on
 void redraw();
 // over everything until A or B
 void message(const std::string& text);
+// the same, only A leaving it, under the hint given: the game then starts again, in the core now chosen
+void messageThenRestart(const std::string& text, const char *hint = "OKAY");
 // A does yes (its button saying yesHint), B no
 void ask(const std::string& text, const char *yesHint, std::function<void()> yes, std::function<void()> no = {});
 // a page saying what is being done (the line, the text under it) while work runs: it may take seconds

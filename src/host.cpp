@@ -473,12 +473,11 @@ void sendCounter(bool on)
 
 std::function<void()> controlsPage;
 
-ui::Host hostPage(bool playing)
+ui::Host hostPage()
 {
 	ui::Host h;
 	h.core = ui::Core::Recomp;
 	h.disc = discPath;
-	h.modulePlaying = playing;
 	h.emulatorSettings = options::file();
 	h.controls = controlsPage;
 	h.recompSetting = [](const std::string& key, const std::string& value) {
@@ -491,18 +490,19 @@ ui::Host hostPage(bool playing)
 }
 
 // the menu until a result: over the picture given, the module (if any) paused
-Outcome menuLoop(const std::vector<u8>& frame, int width, int height, bool playing, const std::string& problem)
+Outcome menuLoop(const std::vector<u8>& frame, int width, int height, bool playing, const std::string& failed = "")
 {
 	ui::setDisplay(&screen);
-	if (!ui::open(frame, width, height, ui::mainScreen(menuTitle, hostPage(playing))))
+	if (!ui::open(frame, width, height, ui::mainScreen(menuTitle, hostPage())))
 	{
 		std::printf(DEADUI_APP_NAME ": host: the menu cannot be opened\n");
 		std::fflush(stdout);
 		screen.release();
 		return playing ? Outcome::Resume : Outcome::Quit;
 	}
-	if (!problem.empty())
-		ui::message(problem);
+	// the module's error, in place of the menu: A goes on in the emulator
+	if (!failed.empty())
+		ui::messageThenRestart(failed, "TRY EMULATOR CORE");
 	PadToMenu toMenu;
 	bool ended = false;
 	for (;;)
@@ -606,15 +606,13 @@ Outcome play(std::string& problem)
 			if (!open)
 			{
 				const std::string why = child.reap();
-				if (why.empty())
+				if (ready && why.empty())
 				{
 					std::printf(DEADUI_APP_NAME ": host: the module ended\n");
 					std::fflush(stdout);
 					return Outcome::Quit;
 				}
-				problem = moduleTitle + " stopped (" + why + ")";
-				std::printf(DEADUI_APP_NAME ": host: the module stopped: %s\n", why.c_str());
-				std::fflush(stdout);
+				problem = moduleTitle + " stopped" + (why.empty() ? "" : " (" + why + ")");
 				return Outcome::Stopped;
 			}
 		}
@@ -652,7 +650,7 @@ Outcome play(std::string& problem)
 		}
 		std::printf(DEADUI_APP_NAME ": host: the module paused, the menu opens at %lld ms\n", Child::now());
 		std::fflush(stdout);
-		switch (menuLoop(frame, width, height, true, ""))
+		switch (menuLoop(frame, width, height, true))
 		{
 		case Outcome::Resume:
 			waitReleased(ReleaseWaitMs);
@@ -666,8 +664,6 @@ Outcome play(std::string& problem)
 		{
 			const std::string why = child.reap();
 			problem = moduleTitle + " stopped" + (why.empty() ? "" : " (" + why + ")");
-			std::printf(DEADUI_APP_NAME ": host: the module stopped under the menu: %s\n", why.c_str());
-			std::fflush(stdout);
 			return Outcome::Stopped;
 		}
 		case Outcome::Switch:
@@ -706,40 +702,38 @@ int run(recomp::Module module, const std::string& disc, std::function<void()> co
 	pad = openPad();
 
 	const std::string manifest = module.dir + "/module.cfg";
-	for (;;)
+	std::string problem;
+	Outcome outcome = Outcome::Stopped;
+	if (!recomp::readManifest(manifest, module))
+		problem = moduleTitle + " cannot be read";
+	else
 	{
-		std::string problem;
-		Outcome outcome = Outcome::Stopped;
-		if (!recomp::readManifest(manifest, module))
-			problem = moduleTitle + " cannot be read";
+		ui::putPage("Loading...", shown);
+		if (child.start(module, disc, problem))
+			outcome = play(problem);
 		else
-		{
-			ui::putPage("Loading...", shown);
-			if (!child.start(module, disc, problem))
-				problem = moduleTitle + " " + problem;
-			else
-				outcome = play(problem);
-		}
-		if (outcome == Outcome::Stopped)
-		{
-			std::printf(DEADUI_APP_NAME ": host: %s\n", problem.c_str());
-			std::fflush(stdout);
-			int width = 0, height = 0;
-			if (!screen.begin(width, height))
-				return 1;
-			const std::vector<u8> black((size_t)width * height * 3, 0);
-			outcome = menuLoop(black, width, height, false, problem);
-			if (outcome == Outcome::Resume)
-				continue;
-		}
-		if (outcome == Outcome::Switch)
-		{
-			ui::putPage("Loading...", shown);
-			return recomp::SwitchExit;
-		}
-		ui::putPage("", "");
-		return 0;
+			problem = moduleTitle + " " + problem;
 	}
+	// any error of the module's: said once, and the game goes on in the emulator, the player's to come back to it
+	if (outcome == Outcome::Stopped)
+	{
+		std::printf(DEADUI_APP_NAME ": host: %s %s: %s: the core is now the emulator\n", moduleId.c_str(), module.version.c_str(),
+				problem.c_str());
+		std::fflush(stdout);
+		recomp::set("core." + moduleId, "emulator");
+		int width = 0, height = 0;
+		if (!screen.begin(width, height))
+			return 1;
+		const std::vector<u8> black((size_t)width * height * 3, 0);
+		outcome = menuLoop(black, width, height, false, problem);
+	}
+	if (outcome == Outcome::Switch)
+	{
+		ui::putPage("Loading...", shown);
+		return recomp::SwitchExit;
+	}
+	ui::putPage("", "");
+	return 0;
 }
 
 }

@@ -8,7 +8,7 @@
 //   name = My Game
 //   version = 1.0.0
 //   exec = mygame                   the executable, beside the manifest
-//   host = 1                        the format it is hosted in (HostFormat): not required, an older module runs
+//   host = 1                        the format it is hosted in (HostFormat): not checked
 //   disc = 0123abcd...              each disc it plays, by the SHA-1 its CHD's header records
 //   title = My Game                 what the menu calls it
 //   setting = scale | Resolution | 1=640x480, panel=1024x768 | panel

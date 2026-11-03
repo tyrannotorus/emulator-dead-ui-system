@@ -629,7 +629,7 @@ void draw()
 			if (st.yes)
 				drawButtons({ { "B", "CANCEL" }, { "A", st.yesHint } }, 0);
 			else
-				drawButtons({ { "A", "OKAY" } }, 0);
+				drawButtons({ { "A", st.yesHint != nullptr ? st.yesHint : "OKAY" } }, 0);
 		}
 		else if (!st.screens.empty())
 		{
@@ -1017,10 +1017,9 @@ void downloadOver()
 	st.modules = recomp::installedFor(st.discSha1);
 	const std::string name = moduleName(st.downloading.title, st.downloading.name);
 	// the module playing now, replaced: the game starts again in it, on A
-	if (st.downloading.id == st.running && st.host.modulePlaying)
+	if (st.downloading.id == st.running)
 	{
-		message(name + "\nrequires a restart");
-		st.ok = [] { finish(Result::Switch); };
+		messageThenRestart(name + "\nrequires a restart");
 		return;
 	}
 	pop();
@@ -1588,6 +1587,13 @@ void message(const std::string& text)
 	clearMessage();
 	st.message = text;
 	st.dirty = true;
+}
+
+void messageThenRestart(const std::string& text, const char *hint)
+{
+	message(text);
+	st.yesHint = hint;
+	st.ok = [] { finish(Result::Switch); };
 }
 
 void ask(const std::string& text, const char *yesHint, std::function<void()> yes, std::function<void()> no)
