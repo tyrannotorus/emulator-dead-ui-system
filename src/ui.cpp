@@ -707,7 +707,7 @@ void reveal(Screen& screen)
 		screen.start = screen.selected - MaxRows + 1;
 }
 
-// the core picked in Options stored as the game's (from its next start): the module picked, and not the disc's
+// the core picked in Options stored as the game's: the module picked, and not the disc's
 // others
 void keepChosen()
 {
@@ -808,7 +808,7 @@ Screen moduleControlsScreen(const recomp::Module& module)
 	return screen;
 }
 
-// Options' rows for a module: its settings as its manifest declares them, kept in the store; the module's name and
+// Options' rows for a module: its settings as its manifest declares them, kept in its settings.cfg; the module's name and
 // version at the bottom left, whatever is selected. Show FPS is always the first row, in every module; a module
 // does not declare it. A setting applies at once only in the module it is for, if that one is playing. Getting a
 // module, updating it and deleting it are the Recomp Store's.

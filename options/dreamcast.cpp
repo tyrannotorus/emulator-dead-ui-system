@@ -1,4 +1,4 @@
-// Emulator Options on the Dreamcast. Not listed: the TV standard and the cable, kept NTSC and VGA for the
+// The emulator's settings on the Dreamcast. Not listed: the TV standard and the cable, kept NTSC and VGA for the
 // Brick's screen.
 #include "options.h"
 

@@ -4,7 +4,7 @@
 #   DEADUI_HOME_ENV     the environment variable naming the emulator's folder
 #   DEADUI_LINK_PREFIX  the network interfaces that are not a connection to the internet
 #   DEADUI_STORE_URL    the address of the list of recomp modules
-#   DEADUI_CONSOLE      options/<console>.cpp: Emulator Options' settings
+#   DEADUI_CONSOLE      options/<console>.cpp: the emulator's settings
 # and finds or leaves to this file CURL, ZLIB and freetype.
 foreach(setting DEADUI_APP_NAME DEADUI_HOME_ENV DEADUI_LINK_PREFIX DEADUI_STORE_URL DEADUI_CONSOLE)
     if(NOT ${setting})

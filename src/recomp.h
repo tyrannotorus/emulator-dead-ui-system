@@ -1,6 +1,6 @@
 // Recomp modules: recompiled builds of single games, played where one is installed for the disc and
-// chosen as its core. The emulator hosts them (host.h): a module is the game only, and the menu, Recomp
-// Options and the store are the emulator's. Each lives in its own folder, <home>/recomp/<id>/, with its
+// chosen as its core. The emulator hosts them (host.h): a module is the game only, and the menu, Options
+// and the store are the emulator's. Each lives in its own folder, <home>/recomp/<id>/, with its
 // executable, a store.json (what its page in the Recomp Store says, download.h) and a manifest,
 // module.cfg:
 //
@@ -77,7 +77,7 @@ std::string runningModule();
 bool removeTree(const std::string& path);
 
 // Deleting a module takes everything of it: its folder, its data (<home>/recomp-data/<id>/: saves,
-// settings, cache) and what the store keeps for it. It is marked first (<home>/recomp/<id>.delete) and
+// settings, cache) and its core in recomp.cfg. It is marked first (<home>/recomp/<id>.delete) and
 // the mark goes last, so a deletion cut short is finished by tidy(). The module being hosted
 // is only marked: tidy() deletes it at the emulator's next start, once it has ended.
 void markForDeletion(const std::string& id);
