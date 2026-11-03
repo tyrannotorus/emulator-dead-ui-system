@@ -254,7 +254,11 @@ void actList(Button code)
 			const int count = (int)item.values.size();
 			item.value = (item.value + step + count) % count;
 			if (item.change)
-				item.change(item.value);
+			{
+				// it may change the page's rows, this one's with them
+				const std::function<void(int)> change = item.change;
+				change(item.value);
+			}
 		}
 		else if (item.shift)
 			item.shift(step);
@@ -707,26 +711,22 @@ void nameContinue()
 	st.screens.front().items.front().name = st.chosen != st.running ? "Restart" : "Continue";
 }
 
-// what Recomp Options is about: the module picked in Options; with the emulator picked, the disc's module if it
-// has just the one
-const recomp::Module *optionsModule()
+// the module Core is on; none: the emulator
+const recomp::Module *chosenModule()
 {
 	for (const recomp::Module& module : st.modules)
 		if (module.id == st.chosen)
 			return &module;
-	return st.modules.size() == 1 ? &st.modules.front() : nullptr;
+	return nullptr;
 }
 
-// the settings of the module Core is on, as its manifest declares them, kept in the store; the module's
-// name and version at the bottom left, whatever is selected. Show FPS is always the first row, in every module;
-// a module does not declare it. A setting applies at once only in the module it is for, if that one is playing.
-// Getting a module, updating it and deleting it are the Recomp Store's.
-Screen recompOptionsScreen()
+// Options' rows for a module: its settings as its manifest declares them, kept in the store; the module's name and
+// version at the bottom left, whatever is selected. Show FPS is always the first row, in every module; a module
+// does not declare it. A setting applies at once only in the module it is for, if that one is playing. Getting a
+// module, updating it and deleting it are the Recomp Store's.
+void addModuleOptions(Screen& screen, const recomp::Module& module)
 {
-	const recomp::Module module = *optionsModule();
 	const bool playing = module.id == st.running;
-	Screen screen;
-	screen.title = "Recomp Options";
 	const std::string label = moduleName(module.title, module.name) + " " + module.version;
 	screen.status = [label] { return label; };
 	// the frame rate in the corner, as the emulator's Show FPS
@@ -764,10 +764,9 @@ Screen recompOptionsScreen()
 		};
 		screen.items.push_back(std::move(item));
 	}
-	return screen;
 }
 
-// a page of Emulator Options' settings (Console, Video, Audio), each kept as it changes
+// a page of the emulator's settings (Console, Video, Audio), each kept as it changes
 Screen settingsScreen(const options::Page& list)
 {
 	Screen screen;
@@ -791,12 +790,10 @@ Screen settingsScreen(const options::Page& list)
 	return screen;
 }
 
-// the emulator's settings, from either core (a module keeps them for the emulator's next start); its
-// Controls and Local Multiplayer are its own, disabled in a module
-Screen emulatorOptionsScreen()
+// Options' rows for the emulator: its settings, from either core (a module keeps them for the emulator's next start);
+// its Controls and Local Multiplayer are its own, disabled in a module
+void addEmulatorOptions(Screen& screen)
 {
-	Screen screen;
-	screen.title = "Emulator Options";
 	screen.desc = st.host.version;
 	for (const options::Page& list : options::pages())
 		screen.items.push_back(entry(list.name, list.desc, [&list] { push(settingsScreen(list)); }));
@@ -806,16 +803,25 @@ Screen emulatorOptionsScreen()
 	Item link = entry("Local Multiplayer", "Two players on two Bricks.", [] { st.host.localMultiplayer(); });
 	link.available = [] { return st.host.localMultiplayer != nullptr; };
 	screen.items.push_back(std::move(link));
-	return screen;
 }
 
-// the game's core, the emulator or a recomp module of it, and each core's options, set from
-// either core
+// what Options shows under Core: the options of the core it is on
+void showCoreOptions(Screen& screen)
+{
+	screen.items.erase(screen.items.begin() + 1, screen.items.end());
+	screen.status = nullptr;
+	screen.desc.clear();
+	if (const recomp::Module *module = chosenModule())
+		addModuleOptions(screen, *module);
+	else
+		addEmulatorOptions(screen);
+}
+
+// the game's core, the emulator or a recomp module of it, and under it the options of the core picked
 Screen optionsScreen()
 {
 	Screen screen;
 	screen.title = "Options";
-	screen.status = networkStatus;
 	Item core;
 	core.name = "Core";
 	core.row = Row::Choice;
@@ -832,12 +838,10 @@ Screen optionsScreen()
 	core.change = [](int value) {
 		st.chosen = value > 0 ? st.modules[value - 1].id : "";
 		nameContinue();
+		showCoreOptions(page());
 	};
 	screen.items.push_back(std::move(core));
-	screen.items.push_back(entry("Emulator Options", "", [] { push(emulatorOptionsScreen()); }));
-	Item recompOptions = entry("Recomp Options", "", [] { push(recompOptionsScreen()); });
-	recompOptions.available = [] { return optionsModule() != nullptr; };
-	screen.items.push_back(std::move(recompOptions));
+	showCoreOptions(screen);
 	return screen;
 }
 

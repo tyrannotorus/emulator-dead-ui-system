@@ -12,9 +12,9 @@
 //   disc = 0123abcd...              each disc it plays, by the SHA-1 its CHD's header records
 //   title = My Game                 what the menu calls it
 //   setting = scale | Resolution | 1=640x480, panel=1024x768 | panel
-//                                   each setting, shown in Recomp Options: key | name | value=label, ... | default
+//                                   each setting, shown in Options: key | name | value=label, ... | default
 //
-// A module has no settings of its own in the game: it declares them here, Recomp Options shows them, the
+// A module has no settings of its own in the game: it declares them here, Options shows them, the
 // store below keeps them, and the host hands them to it.
 #pragma once
 #include <string>

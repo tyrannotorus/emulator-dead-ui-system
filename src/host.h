@@ -1,5 +1,5 @@
 // The emulator as the host of a recomp module. The module plays the game in a process of its own; this
-// process owns the menu, Recomp Options and the store, and sleeps while the game plays: it waits only on
+// process owns the menu, the module's options and the store, and sleeps while the game plays: it waits only on
 // the pad and on a pipe the module holds, with no timer and no other thread.
 //
 // Two pipes, passed to the module as DEADUI_HOST=<read fd>,<write fd>. Lines of text:

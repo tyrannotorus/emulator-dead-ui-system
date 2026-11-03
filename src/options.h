@@ -1,4 +1,4 @@
-// Emulator Options' settings: one list, shown the same in the emulator and in a recomp module, from
+// The emulator's settings: one list, shown the same in the emulator and in a recomp module, from
 // options/<console>.cpp. The emulator shows and changes its own settings as it plays; a module keeps them in
 // emu.cfg, the emulator's file, for the emulator's next start (the two never run at once).
 #pragma once

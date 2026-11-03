@@ -112,10 +112,10 @@ struct Host
 	std::string disc;							// the disc played (its recomp module found by it)
 	Item save;									// the emulator's save states (a module: none, disabled)
 	Item load;
-	std::string version;						// under Emulator Options' rows: the emulator's
-	// Emulator Options' settings (options.h): the emulator's own; a module's, emu.cfg
+	std::string version;						// under Options' rows with the emulator picked: the emulator's
+	// the emulator's settings (options.h): the emulator's own; a module's, emu.cfg
 	options::Store emulatorSettings;
-	// the emulator's own pages under Emulator Options (a module: none, disabled)
+	// the emulator's own pages in Options (a module: none, disabled)
 	std::function<void()> controls;
 	std::function<void()> localMultiplayer;
 	// a recomp setting changed (key, value): a module applies it, if it can while playing
