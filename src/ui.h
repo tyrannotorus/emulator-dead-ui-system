@@ -170,6 +170,11 @@ void putPage(const std::string& line, const std::string& under);
 
 // the font itself, as a TrueType file in the binary: for anything else the program draws text with
 void fontData(const unsigned char *&data, size_t& size);
+// small text on its dark box as BGRA pixels, its size in width and height (none without the font): Show FPS and the
+// emulator's messages, for a frame of this height; built from the same characters a module's counter is
+std::vector<u32> label(const std::string& text, int frameHeight, int& width, int& height);
+// text broken into lines that fit that width as labels
+std::vector<std::string> labelLines(const std::string& text, int frameHeight, int maxWidth);
 // a counter's characters, for a process with no fonts to compose (a hosted module): 32-bit values, its padding and
 // the characters' height, how many, then for each its code, its width and its pixels. False if not written.
 bool writeLabelCells(const std::string& file, const std::string& chars);

@@ -3,6 +3,7 @@
 #include "recomp.h"
 
 #include <cstdlib>
+#include <map>
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -1804,32 +1805,155 @@ void fontData(const unsigned char *&data, size_t& size)
 	size = (size_t)(deadui_font_end - deadui_font);
 }
 
+namespace
+{
+
+// a label's characters at one size, each drawn once: the emulator's yellow at 70% over its dark box
+constexpr u32 LabelBox = 0x202020;
+constexpr u32 LabelText = 0xbcbc0a;
+constexpr int LabelPanelHeight = 768;	// the height the small font's size is for
+struct LabelCell
+{
+	int width = 0;
+	std::vector<u32> pixels;
+};
+struct LabelCells
+{
+	int pad = 0;
+	int height = 0;
+	std::map<char, LabelCell> cells;
+};
+
+LabelCells drawCells(Font& font, int pad, const std::string& chars)
+{
+	LabelCells out;
+	out.pad = pad;
+	out.height = font.lineHeight();
+	for (const char ch : chars)
+	{
+		const std::string text(1, ch);
+		LabelCell cell;
+		cell.width = std::max(font.measure(text), 1);
+		Canvas c;
+		c.resize(cell.width, out.height);
+		c.clear(LabelBox);
+		c.text(font, text, 0, font.ascent(), LabelText);
+		cell.pixels.assign(c.data(), c.data() + (size_t)cell.width * out.height);
+		out.cells[ch] = std::move(cell);
+	}
+	return out;
+}
+
+// every printable character, for a frame of this height: as tall on the panel as a module's, whatever its size
+const LabelCells *labelCells(int frameHeight)
+{
+	static std::map<int, LabelCells> sizes;
+	static std::map<int, std::unique_ptr<Font>> fonts;
+	if (frameHeight <= 0 || !loadFonts())
+		return nullptr;
+	const auto found = sizes.find(frameHeight);
+	if (found != sizes.end())
+		return &found->second;
+	auto font = std::make_unique<Font>();
+	if (!font->init(loaded->library, deadui_font, (size_t)(deadui_font_end - deadui_font), S(10) * frameHeight / LabelPanelHeight))
+		return nullptr;
+	std::string chars;
+	for (char ch = ' '; ch <= '~'; ch++)
+		chars += ch;
+	const int pad = std::max(S(2) * frameHeight / LabelPanelHeight, 1);
+	LabelCells& cells = sizes[frameHeight] = drawCells(*font, pad, chars);
+	fonts[frameHeight] = std::move(font);
+	return &cells;
+}
+
+}	// namespace
+
+std::vector<u32> label(const std::string& text, int frameHeight, int& width, int& height)
+{
+	width = height = 0;
+	const LabelCells *cells = labelCells(frameHeight);
+	if (cells == nullptr)
+		return {};
+	width = cells->pad * 2;
+	for (const char ch : text)
+	{
+		const auto cell = cells->cells.find(ch);
+		if (cell != cells->cells.end())
+			width += cell->second.width;
+	}
+	height = cells->height + cells->pad * 2;
+	std::vector<u32> pixels((size_t)width * height, LabelBox);
+	int x = cells->pad;
+	for (const char ch : text)
+	{
+		const auto cell = cells->cells.find(ch);
+		if (cell == cells->cells.end())
+			continue;
+		for (int y = 0; y < cells->height; y++)
+			std::copy_n(&cell->second.pixels[(size_t)y * cell->second.width], cell->second.width,
+					&pixels[(size_t)(y + cells->pad) * width + x]);
+		x += cell->second.width;
+	}
+	return pixels;
+}
+
+std::vector<std::string> labelLines(const std::string& text, int frameHeight, int maxWidth)
+{
+	std::vector<std::string> lines;
+	const LabelCells *cells = labelCells(frameHeight);
+	if (cells == nullptr)
+		return lines;
+	const auto widthOf = [cells](const std::string& s) {
+		int w = cells->pad * 2;
+		for (const char ch : s)
+		{
+			const auto cell = cells->cells.find(ch);
+			if (cell != cells->cells.end())
+				w += cell->second.width;
+		}
+		return w;
+	};
+	std::string line;
+	for (size_t start = 0; start < text.size(); )
+	{
+		size_t end = text.find(' ', start);
+		if (end == std::string::npos)
+			end = text.size();
+		const std::string word = text.substr(start, end - start);
+		const std::string longer = line.empty() ? word : line + " " + word;
+		if (!line.empty() && widthOf(longer) > maxWidth)
+		{
+			lines.push_back(line);
+			line = word;
+		}
+		else
+			line = longer;
+		start = end + 1;
+	}
+	if (!line.empty())
+		lines.push_back(line);
+	return lines;
+}
+
 bool writeLabelCells(const std::string& file, const std::string& chars)
 {
 	if (!loadFonts())
 		return false;
-	Font& font = loaded->tiny;
 	FILE *f = std::fopen(file.c_str(), "wb");
 	if (f == nullptr)
 	{
 		std::printf(DEADUI_APP_NAME ": label cells: cannot write %s: %s\n", file.c_str(), std::strerror(errno));
 		return false;
 	}
-	const u32 height = (u32)font.lineHeight();
-	const u32 head[3] = { (u32)S(2), height, (u32)chars.size() };
+	const LabelCells cells = drawCells(loaded->tiny, S(2), chars);
+	const u32 head[3] = { (u32)cells.pad, (u32)cells.height, (u32)chars.size() };
 	bool written = std::fwrite(head, sizeof(head[0]), 3, f) == 3;
 	for (const char ch : chars)
 	{
-		const std::string text(1, ch);
-		const int width = std::max(font.measure(text), 1);
-		Canvas c;
-		c.resize(width, (int)height);
-		c.clear(0x202020);
-		// the emulator's yellow at 70% over its dark box
-		c.text(font, text, 0, font.ascent(), 0xbcbc0a);
-		const u32 cell[2] = { (u32)(unsigned char)ch, (u32)width };
-		written = written && std::fwrite(cell, sizeof(cell[0]), 2, f) == 2
-				&& std::fwrite(c.data(), sizeof(u32), (size_t)width * height, f) == (size_t)width * height;
+		const LabelCell& cell = cells.cells.at(ch);
+		const u32 top[2] = { (u32)(unsigned char)ch, (u32)cell.width };
+		written = written && std::fwrite(top, sizeof(top[0]), 2, f) == 2
+				&& std::fwrite(cell.pixels.data(), sizeof(u32), cell.pixels.size(), f) == cell.pixels.size();
 	}
 	std::fclose(f);
 	if (!written)
