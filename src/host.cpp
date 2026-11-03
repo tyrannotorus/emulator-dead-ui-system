@@ -693,7 +693,7 @@ int run(recomp::Module module, const std::string& disc, std::function<void()> co
 	sigaction(SIGINT, &stop, nullptr);
 
 	discPath = disc;
-	const char *rom = std::getenv("DEADCAST_ROM");
+	const char *rom = std::getenv(DEADUI_ROM_ENV);
 	moduleTitle = module.title.empty() ? module.name : module.title;
 	menuTitle = ui::gameName(rom != nullptr && *rom != '\0' ? rom : disc);
 	moduleId = module.id;

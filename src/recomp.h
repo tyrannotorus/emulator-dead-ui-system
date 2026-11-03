@@ -13,6 +13,7 @@
 //   title = My Game                 what the menu calls it
 //   setting = scale | Resolution | 1=640x480, panel=1024x768 | panel
 //                                   each setting, shown in Options: key | name | value=label, ... | default
+//                                   and, if it has one, a fifth field: what its row says when selected
 //   control = a | A Button | A      each control the player may remap, on its Controls page: key | name | default,
 //                                   the pad's inputs by their labels, comma separated, or NONE
 //
@@ -39,6 +40,7 @@ struct Setting
 	std::string name;
 	std::vector<std::pair<std::string, std::string>> values;	// value, label
 	std::string def;
+	std::string desc;	// its row's description, if any
 };
 struct Control
 {

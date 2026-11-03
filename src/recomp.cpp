@@ -158,9 +158,9 @@ bool readManifest(const std::string& file, Module& module)
 		else if (kv.first == "setting")
 		{
 			const std::vector<std::string> fields = split(kv.second, '|');
-			if (fields.size() != 4)
+			if (fields.size() != 4 && fields.size() != 5)
 				continue;
-			Setting setting { fields[0], fields[1], {}, fields[3] };
+			Setting setting { fields[0], fields[1], {}, fields[3], fields.size() == 5 ? fields[4] : "" };
 			for (const std::string& choice : split(fields[2], ','))
 			{
 				const size_t eq = choice.find('=');

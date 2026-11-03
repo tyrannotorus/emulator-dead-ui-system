@@ -37,15 +37,20 @@ __asm__(".section .rodata\n"
 // the small text's characters, drawn once from that font (tools/make-label-cells.sh): for the program's own text, and a
 // hosted module's frame counter
 extern "C" const unsigned char deadui_label_cells[];
+extern "C" const unsigned char deadui_panel_cells[];
 extern "C" const unsigned char deadui_counter_cells[];
 extern "C" const unsigned char deadui_counter_cells_end[];
 __asm__(".section .rodata\n"
 		".global deadui_label_cells\n"
+		".global deadui_panel_cells\n"
 		".global deadui_counter_cells\n"
 		".global deadui_counter_cells_end\n"
 		".balign 16\n"
 		"deadui_label_cells:\n"
 		".incbin \"" DEADUI_LABEL_CELLS "\"\n"
+		".balign 16\n"
+		"deadui_panel_cells:\n"
+		".incbin \"" DEADUI_PANEL_CELLS "\"\n"
 		".balign 16\n"
 		"deadui_counter_cells:\n"
 		".incbin \"" DEADUI_COUNTER_CELLS "\"\n"
@@ -852,6 +857,7 @@ void addModuleOptions(Screen& screen, const recomp::Module& module)
 	{
 		Item item;
 		item.name = setting.name;
+		item.desc = setting.desc;
 		item.row = Row::Choice;
 		const std::string now = recomp::moduleGet(module.id, setting.key, setting.def);
 		std::vector<std::string> values;
@@ -1840,33 +1846,35 @@ struct LabelCells
 	std::map<char, LabelCell> cells;
 };
 
-const LabelCells& labelCells()
+LabelCells parseCells(const u8 *at)
 {
-	static const LabelCells parsed = [] {
-		LabelCells out;
-		const u8 *at = deadui_label_cells;
-		const auto take = [&at] {
-			u32 value;
-			std::memcpy(&value, at, sizeof(value));
-			at += sizeof(value);
-			return value;
-		};
-		out.pad = (int)take();
-		out.height = (int)take();
-		const u32 count = take();
-		for (u32 i = 0; i < count; i++)
-		{
-			const char code = (char)take();
-			LabelCell cell;
-			cell.width = (int)take();
-			cell.pixels.resize((size_t)cell.width * out.height);
-			std::memcpy(cell.pixels.data(), at, cell.pixels.size() * sizeof(u32));
-			at += cell.pixels.size() * sizeof(u32);
-			out.cells[code] = std::move(cell);
-		}
-		return out;
-	}();
-	return parsed;
+	LabelCells out;
+	const auto take = [&at] {
+		u32 value;
+		std::memcpy(&value, at, sizeof(value));
+		at += sizeof(value);
+		return value;
+	};
+	out.pad = (int)take();
+	out.height = (int)take();
+	const u32 count = take();
+	for (u32 i = 0; i < count; i++)
+	{
+		const char code = (char)take();
+		LabelCell cell;
+		cell.width = (int)take();
+		cell.pixels.resize((size_t)cell.width * out.height);
+		std::memcpy(cell.pixels.data(), at, cell.pixels.size() * sizeof(u32));
+		at += cell.pixels.size() * sizeof(u32);
+		out.cells[code] = std::move(cell);
+	}
+	return out;
+}
+
+const LabelCells& labelCells(bool panelSize)
+{
+	static const LabelCells small = parseCells(deadui_label_cells), panel = parseCells(deadui_panel_cells);
+	return panelSize ? panel : small;
 }
 
 int labelWidth(const LabelCells& cells, const std::string& text)
@@ -1883,9 +1891,9 @@ int labelWidth(const LabelCells& cells, const std::string& text)
 
 }	// namespace
 
-std::vector<u32> label(const std::string& text, int& width, int& height)
+std::vector<u32> label(const std::string& text, int& width, int& height, bool panelSize)
 {
-	const LabelCells& cells = labelCells();
+	const LabelCells& cells = labelCells(panelSize);
 	width = labelWidth(cells, text);
 	height = cells.height + cells.pad * 2;
 	std::vector<u32> pixels((size_t)width * height, 0x202020);
@@ -1903,9 +1911,9 @@ std::vector<u32> label(const std::string& text, int& width, int& height)
 	return pixels;
 }
 
-std::vector<std::string> labelLines(const std::string& text, int maxWidth)
+std::vector<std::string> labelLines(const std::string& text, int maxWidth, bool panelSize)
 {
-	const LabelCells& cells = labelCells();
+	const LabelCells& cells = labelCells(panelSize);
 	std::vector<std::string> lines;
 	std::string line;
 	for (size_t start = 0; start < text.size(); )

@@ -1,7 +1,6 @@
-// The menu over a paused game and the start page, drawn on the CPU so that they need nothing of the host's
-// renderer. Shared by an emulator and its recomp modules, so that each one plays with the same menu: a module
-// adds no menu of its own. A host (the emulator, a module) gives it the screen, the
-// menu's buttons, the paused game's picture and its own pages; it needs nothing of the emulator.
+// The menu over a paused game and the start page, drawn on the CPU so that they need nothing of the emulator's
+// renderer. The emulator's, for its recomp modules too: a module adds no menu of its own. The emulator gives it
+// the screen, the menu's buttons, the paused game's picture and its own pages.
 //
 // Every page looks like the first: its title in a pill at the top, its rows (or a body of its own), the
 // buttons at the bottom right and the selected row's description (or the page's status) at the bottom
@@ -169,11 +168,11 @@ bool showPage(std::function<void()> draw);
 // The emulator handing the game to a recomp module, or back. Stays until the next one draws.
 void putPage(const std::string& line, const std::string& under);
 
-// small text on its dark box as BGRA pixels, for frames drawn at 640 x 480: Show FPS and the emulator's messages, from
-// characters built in (tools/make-label-cells.sh)
-std::vector<u32> label(const std::string& text, int& width, int& height);
+// small text on its dark box as BGRA pixels, for frames drawn at 640 x 480, or at the panel's size: Show FPS and the
+// emulator's messages, from characters built in (tools/make-label-cells.sh)
+std::vector<u32> label(const std::string& text, int& width, int& height, bool panelSize = false);
 // text broken into lines that fit that width as labels
-std::vector<std::string> labelLines(const std::string& text, int maxWidth);
+std::vector<std::string> labelLines(const std::string& text, int maxWidth, bool panelSize = false);
 // the characters of a hosted module's frame counter, built in, copied to a file for it to compose: it has no font.
 // False if not written.
 bool writeCounterCells(const std::string& file);

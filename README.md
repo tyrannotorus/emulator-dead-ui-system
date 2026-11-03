@@ -10,6 +10,7 @@ Add this repository as a submodule, then in CMake:
 ```cmake
 set(DEADUI_APP_NAME MyEmulator)     # shown to the player and in its log
 set(DEADUI_HOME_ENV MYEMU_HOME)     # the environment variable naming its folder
+set(DEADUI_ROM_ENV MYEMU_ROM)       # the one naming the file the launcher started, for the menu's title
 set(DEADUI_LINK_PREFIX mylink)      # network interfaces that are not the internet
 set(DEADUI_STORE_URL https://example.com/catalog.cfg)  # the list of recomp modules
 set(DEADUI_CONSOLE dreamcast)       # options/<console>.cpp: the emulator's settings

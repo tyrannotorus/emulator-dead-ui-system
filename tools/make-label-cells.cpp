@@ -63,7 +63,9 @@ int main(int argc, char **argv)
 		printable += ch;
 	// for frames drawn at 640 x 480, which the display engine scales to the panel: as tall there as the next
 	const bool frame = write(library, ttf, 18, 3, printable, out + "/label-cells-480.bin");
+	// for frames at the panel's size
+	const bool panel = write(library, ttf, 30, 6, printable, out + "/label-cells-768.bin");
 	// a module's frame counter, on frames at the panel's size: only what it may show
 	const bool counter = write(library, ttf, 30, 6, "0123456789. ", out + "/label-cells-counter.bin");
-	return frame && counter ? 0 : 1;
+	return frame && panel && counter ? 0 : 1;
 }

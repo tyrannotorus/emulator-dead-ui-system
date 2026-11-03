@@ -1,12 +1,13 @@
-# deadui: an emulator's menu, start page and recomp module store, drawn on the CPU, built into the emulator and
-# into each of its recomp modules. The parent project sets, before add_subdirectory():
+# deadui: an emulator's menu, start page, recomp module store and module host, drawn on the CPU, built into the
+# emulator. The parent project sets, before add_subdirectory():
 #   DEADUI_APP_NAME     the emulator's name, shown to the player and in its log
 #   DEADUI_HOME_ENV     the environment variable naming the emulator's folder
+#   DEADUI_ROM_ENV      the environment variable naming the file the launcher started, for the menu's title
 #   DEADUI_LINK_PREFIX  the network interfaces that are not a connection to the internet
 #   DEADUI_STORE_URL    the address of the list of recomp modules
 #   DEADUI_CONSOLE      options/<console>.cpp: the emulator's settings
 # and finds or leaves to this file CURL, ZLIB and freetype.
-foreach(setting DEADUI_APP_NAME DEADUI_HOME_ENV DEADUI_LINK_PREFIX DEADUI_STORE_URL DEADUI_CONSOLE)
+foreach(setting DEADUI_APP_NAME DEADUI_HOME_ENV DEADUI_ROM_ENV DEADUI_LINK_PREFIX DEADUI_STORE_URL DEADUI_CONSOLE)
     if(NOT ${setting})
         message(FATAL_ERROR "deadui: ${setting} is not set")
     endif()
@@ -34,6 +35,7 @@ target_compile_features(deadui PUBLIC cxx_std_17)
 target_compile_definitions(deadui PRIVATE
         DEADUI_APP_NAME="${DEADUI_APP_NAME}"
         DEADUI_HOME_ENV="${DEADUI_HOME_ENV}"
+        DEADUI_ROM_ENV="${DEADUI_ROM_ENV}"
         DEADUI_LINK_PREFIX="${DEADUI_LINK_PREFIX}"
         DEADUI_STORE_URL="${DEADUI_STORE_URL}")
 
@@ -56,7 +58,9 @@ if(NOT EXISTS ${DEADUI_FONT} OR ${DEADUI_FONT_ZIP} IS_NEWER_THAN ${DEADUI_FONT})
 endif()
 # and the small text's characters, drawn from it by tools/make-label-cells.sh
 set(DEADUI_LABEL_CELLS ${CMAKE_CURRENT_SOURCE_DIR}/fonts/label-cells-480.bin)
+set(DEADUI_PANEL_CELLS ${CMAKE_CURRENT_SOURCE_DIR}/fonts/label-cells-768.bin)
 set(DEADUI_COUNTER_CELLS ${CMAKE_CURRENT_SOURCE_DIR}/fonts/label-cells-counter.bin)
 target_compile_definitions(deadui PRIVATE DEADUI_FONT="${DEADUI_FONT}" DEADUI_LABEL_CELLS="${DEADUI_LABEL_CELLS}"
+    DEADUI_PANEL_CELLS="${DEADUI_PANEL_CELLS}"
     DEADUI_COUNTER_CELLS="${DEADUI_COUNTER_CELLS}")
-set_source_files_properties(src/ui.cpp PROPERTIES OBJECT_DEPENDS "${DEADUI_FONT};${DEADUI_LABEL_CELLS};${DEADUI_COUNTER_CELLS}")
+set_source_files_properties(src/ui.cpp PROPERTIES OBJECT_DEPENDS "${DEADUI_FONT};${DEADUI_LABEL_CELLS};${DEADUI_PANEL_CELLS};${DEADUI_COUNTER_CELLS}")
