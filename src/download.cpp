@@ -269,10 +269,12 @@ bool storeCatalog(std::vector<StoreEntry>& entries, const std::atomic<bool>& can
 	{
 		std::printf(DEADUI_APP_NAME ": store list: NOT loaded from %s: %s (%zu bytes)\n", address.c_str(),
 				cancel ? "cancelled" : text.empty() ? "nothing fetched" : "not a store list", text.size());
+		std::fflush(stdout);
 		return false;
 	}
 	entries = parseCatalog(text);
 	std::printf(DEADUI_APP_NAME ": store list: loaded from %s: %zu modules\n", address.c_str(), entries.size());
+	std::fflush(stdout);
 	return true;
 }
 
