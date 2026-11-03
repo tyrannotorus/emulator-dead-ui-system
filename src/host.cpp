@@ -466,7 +466,7 @@ std::string discPath;
 // Show FPS: the module has no fonts, so the counter's characters are drawn once, here, for it to compose
 void sendCounter(bool on)
 {
-	if (on && ui::writeLabelCells(LabelCells, "F:0123456789. "))
+	if (on && ui::writeLabelCells(LabelCells, "0123456789. "))
 		child.send(std::string("set label ") + LabelCells);
 	child.send(std::string("set fps ") + (on ? "on" : "off"));
 }
