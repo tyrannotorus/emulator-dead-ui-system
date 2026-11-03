@@ -173,7 +173,7 @@ struct State
 	std::vector<recomp::StoreEntry> store;		// what the Recomp Store's page offers
 	std::vector<recomp::StoreEntry> storeCache;	// the list fetched, kept in memory for this run
 	bool storeCached = false;
-	bool storeAwaitsNetwork = false;	// an empty store's page, to fetch the list when the network is back
+	bool storeAwaitsNetwork = false;	// the store's page, to fetch the list when the network is back
 	bool storeFetchFailed = false;		// the last try at the list, said on the store's page
 	std::thread storeLoad;			// reading it, its page saying so
 	std::atomic<bool> storeLoaded { false };
@@ -1334,25 +1334,26 @@ Screen storeScreen()
 			screen.items.push_back(std::move(row));
 		}
 	}
+	// opened with no network: the list is fetched as soon as there is one, the page then showing it
+	st.storeAwaitsNetwork = !st.network;
+	screen.tick = [] {
+		if (!st.network && !st.storeCached)
+			st.storeAwaitsNetwork = true;
+		else if (st.network && st.storeAwaitsNetwork)
+		{
+			st.storeAwaitsNetwork = false;
+			page() = currentStore();
+			redraw();
+		}
+	};
 	if (screen.items.empty())
 	{
 		screen.buttons = [] { return Buttons { { "B", "BACK" } }; };
-		// nothing to show: says why, and fetches the list when the network is back
-		st.storeAwaitsNetwork = !st.network;
+		// nothing to show: says why
 		screen.body = [](int ox) {
 			const char *why = !st.network ? "No Internet Connection"
 					: st.storeFetchFailed ? "Store Could Not Be Loaded" : "No Modules Available";
 			drawMessage(loaded->large, why, ox, 0, st.canvas.width(), st.canvas.height());
-		};
-		screen.tick = [] {
-			if (!st.network)
-				st.storeAwaitsNetwork = true;
-			else if (st.storeAwaitsNetwork)
-			{
-				st.storeAwaitsNetwork = false;
-				page() = currentStore();
-				redraw();
-			}
 		};
 	}
 	else
