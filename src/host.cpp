@@ -544,10 +544,14 @@ Outcome play(std::string& problem)
 			child.send("resume");
 			continue;
 		}
+		std::printf(DEADUI_APP_NAME ": host: the module paused, the menu opens at %lld ms\n", Child::now());
+		std::fflush(stdout);
 		switch (menuLoop(frame, width, height, true, ""))
 		{
 		case Outcome::Resume:
 			child.send("resume");
+			std::printf(DEADUI_APP_NAME ": host: resume sent at %lld ms\n", Child::now());
+			std::fflush(stdout);
 			wakes = 0;
 			cpuAtStart = cpuMicroseconds();
 			break;
