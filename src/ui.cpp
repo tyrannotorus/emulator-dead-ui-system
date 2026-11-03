@@ -984,14 +984,16 @@ void downloadOver()
 		return;
 	}
 	st.modules = recomp::installedFor(st.discSha1);
+	// the module playing now, replaced: the game starts again in it
+	if (st.downloading.id == st.running && st.host.modulePlaying)
+	{
+		finish(Result::Switch);
+		return;
+	}
 	const std::string name = moduleName(st.downloading.title, st.downloading.name);
 	pop();
 	refreshStore(name);
-	// the module playing now goes on as it started
-	if (st.downloading.id == st.running && st.host.modulePlaying)
-		message(name + " is updated: it plays from your game's next start.");
-	else
-		message(name + (st.updating ? " is updated." : " is installed."));
+	message(name + (st.updating ? " is updated." : " is installed."));
 }
 
 // fetched (installed by recomp::install) on a thread of its own, its page showing how far; B stops it
