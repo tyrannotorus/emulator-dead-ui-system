@@ -54,5 +54,9 @@ set(DEADUI_FONT ${CMAKE_CURRENT_BINARY_DIR}/font/NotoSans-Bold.ttf)
 if(NOT EXISTS ${DEADUI_FONT} OR ${DEADUI_FONT_ZIP} IS_NEWER_THAN ${DEADUI_FONT})
     file(ARCHIVE_EXTRACT INPUT ${DEADUI_FONT_ZIP} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/font)
 endif()
-target_compile_definitions(deadui PRIVATE DEADUI_FONT="${DEADUI_FONT}")
-set_source_files_properties(src/ui.cpp PROPERTIES OBJECT_DEPENDS ${DEADUI_FONT})
+# and the small text's characters, drawn from it by tools/make-label-cells.sh
+set(DEADUI_LABEL_CELLS ${CMAKE_CURRENT_SOURCE_DIR}/fonts/label-cells-480.bin)
+set(DEADUI_COUNTER_CELLS ${CMAKE_CURRENT_SOURCE_DIR}/fonts/label-cells-counter.bin)
+target_compile_definitions(deadui PRIVATE DEADUI_FONT="${DEADUI_FONT}" DEADUI_LABEL_CELLS="${DEADUI_LABEL_CELLS}"
+    DEADUI_COUNTER_CELLS="${DEADUI_COUNTER_CELLS}")
+set_source_files_properties(src/ui.cpp PROPERTIES OBJECT_DEPENDS "${DEADUI_FONT};${DEADUI_LABEL_CELLS};${DEADUI_COUNTER_CELLS}")

@@ -168,14 +168,14 @@ bool showPage(std::function<void()> draw);
 // The emulator handing the game to a recomp module, or back. Stays until the next one draws.
 void putPage(const std::string& line, const std::string& under);
 
-// small text on its dark box as BGRA pixels, its size in width and height (none without the font): Show FPS and the
-// emulator's messages, for a frame of this height; built from the same characters a module's counter is
-std::vector<u32> label(const std::string& text, int frameHeight, int& width, int& height);
+// small text on its dark box as BGRA pixels, for frames drawn at 640 x 480: Show FPS and the emulator's messages, from
+// characters built in (tools/make-label-cells.sh)
+std::vector<u32> label(const std::string& text, int& width, int& height);
 // text broken into lines that fit that width as labels
-std::vector<std::string> labelLines(const std::string& text, int frameHeight, int maxWidth);
-// a counter's characters, for a process with no fonts to compose (a hosted module): 32-bit values, its padding and
-// the characters' height, how many, then for each its code, its width and its pixels. False if not written.
-bool writeLabelCells(const std::string& file, const std::string& chars);
+std::vector<std::string> labelLines(const std::string& text, int maxWidth);
+// the characters of a hosted module's frame counter, built in, copied to a file for it to compose: it has no font.
+// False if not written.
+bool writeCounterCells(const std::string& file);
 
 // a page's line in white and text under it in grey, centered on black
 void drawPage(const std::string& line, const std::string& under);

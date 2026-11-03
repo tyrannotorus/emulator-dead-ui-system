@@ -24,6 +24,8 @@ file at `DEADUI_STORE_URL`, in the format `download.h` describes.
 
 - `src/`: pages, drawing, the store, downloads, installed modules and the module host
 - `options/`: the emulator's settings for each console
+- `fonts/`: the font, and its small text's characters drawn in advance (`label-cells-*.bin`)
+- `tools/`: `make-label-cells.sh` draws those characters again: run it after changing the font, or their sizes or colours
 - `toolchain/`: the tg5040 cross toolchain (`toolchain.sh`, `devlibs.sh`, `tg5040.cmake`)
 - `third_party/`: FreeType (submodule) and nlohmann/json
 

@@ -463,10 +463,10 @@ std::string moduleTitle;
 std::string menuTitle;
 std::string discPath;
 
-// Show FPS: the module has no fonts, so the counter's characters are drawn once, here, for it to compose
+// Show FPS: the module has no fonts, so it composes the counter from these characters
 void sendCounter(bool on)
 {
-	if (on && ui::writeLabelCells(LabelCells, "0123456789. "))
+	if (on && ui::writeCounterCells(LabelCells))
 		child.send(std::string("set label ") + LabelCells);
 	child.send(std::string("set fps ") + (on ? "on" : "off"));
 }
