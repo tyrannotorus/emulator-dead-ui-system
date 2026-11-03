@@ -71,22 +71,24 @@ public:
 
 	void end(After) override {}
 
-	// the picture on the screen now, as RGB24
+	// the picture on the screen now, as RGB24, every other pixel: it is only blurred for the menu's backdrop, and
+	// fb0 is slow to read
 	bool picture(std::vector<u8>& rgb, int& width, int& height)
 	{
 		if (!map() || ioctl(fd, FBIOGET_VSCREENINFO, &var) != 0)
 			return false;
-		width = (int)var.xres;
-		height = (int)var.yres;
-		rgb.resize((size_t)var.xres * var.yres * 3);
+		constexpr u32 Step = 2;
+		width = (int)(var.xres / Step);
+		height = (int)(var.yres / Step);
+		rgb.resize((size_t)width * height * 3);
 		const size_t first = (size_t)var.yoffset * fix.line_length + (size_t)var.xoffset * 4;
 		size_t out = 0;
-		for (u32 y = 0; y < var.yres; y++)
+		for (u32 y = 0; y < (u32)height; y++)
 		{
-			const u32 *row = (const u32 *)(memory + first + (size_t)y * fix.line_length);
-			for (u32 x = 0; x < var.xres; x++)
+			const u32 *row = (const u32 *)(memory + first + (size_t)y * Step * fix.line_length);
+			for (u32 x = 0; x < (u32)width; x++)
 			{
-				const u32 p = row[x];
+				const u32 p = row[x * Step];
 				rgb[out++] = (u8)(p >> 16);
 				rgb[out++] = (u8)(p >> 8);
 				rgb[out++] = (u8)p;
