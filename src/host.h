@@ -12,12 +12,14 @@
 #pragma once
 #include "recomp.h"
 
+#include <functional>
 #include <string>
 
 namespace deadui::host
 {
 
-// the module played until the player leaves it: what this process is to exit with
-int run(recomp::Module module, const std::string& disc);
+// the module played until the player leaves it: what this process is to exit with. controls: pushes the program's
+// Controls page, which reads the pad itself while it is shown (ui::Screen::readsPad)
+int run(recomp::Module module, const std::string& disc, std::function<void()> controls = {});
 
 }

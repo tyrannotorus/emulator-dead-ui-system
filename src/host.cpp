@@ -436,6 +436,8 @@ void sendCounter(bool on)
 	child.send(std::string("set fps ") + (on ? "on" : "off"));
 }
 
+std::function<void()> controlsPage;
+
 ui::Host hostPage(bool playing)
 {
 	ui::Host h;
@@ -443,6 +445,7 @@ ui::Host hostPage(bool playing)
 	h.disc = discPath;
 	h.modulePlaying = playing;
 	h.emulatorSettings = options::file();
+	h.controls = controlsPage;
 	h.recompSetting = [](const std::string& key, const std::string& value) {
 		if (key == "fps")
 			sendCounter(value == "on");
@@ -475,7 +478,8 @@ Outcome menuLoop(const std::vector<u8>& frame, int width, int height, bool playi
 		poll(f, 2, screen.takeShown() ? 0 : 16);
 		input_event ev;
 		while (pad >= 0 && read(pad, &ev, sizeof(ev)) == (ssize_t)sizeof(ev))
-			toMenu.press(ev);
+			if (!ui::pageReadsPad())
+				toMenu.press(ev);
 		if (playing && !ended && (f[1].revents & (POLLIN | POLLHUP)))
 		{
 			std::vector<std::string> lines;
@@ -644,8 +648,9 @@ void stopHandler(int)
 
 }	// namespace
 
-int run(recomp::Module module, const std::string& disc)
+int run(recomp::Module module, const std::string& disc, std::function<void()> controls)
 {
+	controlsPage = std::move(controls);
 	signal(SIGPIPE, SIG_IGN);
 	struct sigaction stop {};
 	stop.sa_handler = stopHandler;

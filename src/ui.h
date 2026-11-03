@@ -96,6 +96,7 @@ struct Screen
 	int start = 0;							// the first row shown
 	std::function<void()> back;				// B, and MENU on the first page; else the page before again
 	std::function<void()> tick;				// every frame while shown (redraw(), finish() when something changed)
+	bool readsPad = false;					// its tick brings the pad's presses (button()): a host's own reading waits
 	// a page of its own (the link's): its body drawn at ox, its buttons and its input, instead of rows
 	std::function<void(int ox)> body;
 	std::function<Buttons()> buttons;
@@ -115,7 +116,7 @@ struct Host
 	std::string version;						// under Options' rows with the emulator picked: the emulator's
 	// the emulator's settings (options.h): the emulator's own; a module's, emu.cfg
 	options::Store emulatorSettings;
-	// the emulator's own pages in Options (a module: none, disabled)
+	// the emulator's own pages in Options (a module's host: Controls if the program brings it; Local Multiplayer, none)
 	std::function<void()> controls;
 	std::function<void()> localMultiplayer;
 	// a recomp setting changed (key, value): a module applies it, if it can while playing
@@ -128,6 +129,7 @@ Screen mainScreen(const std::string& title, Host host);
 // the menu over the paused game: its picture (RGB24, the backdrop, blurred and darkened) and the first page
 bool open(const std::vector<u8>& frame, int frameWidth, int frameHeight, Screen first);
 bool isOpen();
+bool pageReadsPad();					// the page shown reads the pad itself
 void push(Screen screen);
 void pop();
 Screen& page();							// the page shown

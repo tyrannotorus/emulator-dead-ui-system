@@ -212,7 +212,7 @@ std::string runningModule()
 	return running;
 }
 
-void runChosen(const std::string& disc)
+void runChosen(const std::string& disc, std::function<void()> controls)
 {
 	const std::vector<Module> modules = installedFor(chdSha1(disc));
 	const auto chosen = std::find_if(modules.begin(), modules.end(), [](const Module& m) {
@@ -220,7 +220,7 @@ void runChosen(const std::string& disc)
 	});
 	if (chosen == modules.end())
 		return;
-	const int code = host::run(*chosen, disc);
+	const int code = host::run(*chosen, disc, std::move(controls));
 	std::fflush(stdout);
 	std::exit(code);
 }

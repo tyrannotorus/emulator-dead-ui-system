@@ -17,6 +17,7 @@
 // A module has no settings of its own in the game: it declares them here, Options shows them, the
 // store below keeps them, and the host hands them to it.
 #pragma once
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -78,7 +79,7 @@ void tidy();
 
 // The core chosen for a disc in Options: one of its modules is hosted until the player leaves it, and this
 // process then exits. Returns only if the emulator is the core.
-void runChosen(const std::string& disc);
+void runChosen(const std::string& disc, std::function<void()> controls = {});
 // The format of a module's hosting this emulator speaks (module.cfg's host, host.h)
 constexpr int HostFormat = 1;
 // The exit code that asks the launcher to start the game again, in the core now chosen

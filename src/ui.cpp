@@ -784,8 +784,22 @@ Screen settingsScreen(const options::Page& list)
 	return screen;
 }
 
-// Options' rows for the emulator: its settings, from either core (a module keeps them for the emulator's next start);
-// its Controls and Local Multiplayer are its own, disabled in a module
+Screen optionsScreen();
+
+// another core picked, on leaving Options: the game starts again in it, or the core goes back to the one playing
+void askCoreRestart()
+{
+	ask("Changing a core requires a restart", "OKAY", [] {
+		keepChosen();
+		finish(Result::Switch);
+	}, [] {
+		st.chosen = st.running;
+		page() = optionsScreen();
+	});
+}
+
+// Options' rows for the emulator: its settings, from either core (a module's host keeps them for the emulator's next
+// start). Local Multiplayer plays in the emulator: from a module's host, the game restarts in it first.
 void addEmulatorOptions(Screen& screen)
 {
 	screen.desc = st.host.version;
@@ -794,9 +808,12 @@ void addEmulatorOptions(Screen& screen)
 	Item controls = entry("Controls", "", [] { st.host.controls(); });
 	controls.available = [] { return st.host.controls != nullptr; };
 	screen.items.push_back(std::move(controls));
-	Item link = entry("Local Multiplayer", "Two players on two Bricks.", [] { st.host.localMultiplayer(); });
-	link.available = [] { return st.host.localMultiplayer != nullptr; };
-	screen.items.push_back(std::move(link));
+	screen.items.push_back(entry("Local Multiplayer", "Two players on two Bricks.", [] {
+		if (st.host.localMultiplayer)
+			st.host.localMultiplayer();
+		else
+			askCoreRestart();
+	}));
 }
 
 // what Options shows under Core: the options of the core it is on
@@ -834,20 +851,11 @@ Screen optionsScreen()
 	};
 	screen.items.push_back(std::move(core));
 	showCoreOptions(screen);
-	// with another core picked: the game starts again in it, or the core goes back to the one playing
 	screen.back = [] {
 		if (st.chosen == st.running)
-		{
 			pop();
-			return;
-		}
-		ask("Changing a core requires a restart", "OKAY", [] {
-			keepChosen();
-			finish(Result::Switch);
-		}, [] {
-			st.chosen = st.running;
-			page() = optionsScreen();
-		});
+		else
+			askCoreRestart();
 	};
 	return screen;
 }
@@ -1398,6 +1406,11 @@ bool open(const std::vector<u8>& frame, int frameWidth, int frameHeight, Screen 
 bool isOpen()
 {
 	return st.open;
+}
+
+bool pageReadsPad()
+{
+	return st.open && !st.screens.empty() && st.screens.back().readsPad;
 }
 
 void push(Screen screen)
