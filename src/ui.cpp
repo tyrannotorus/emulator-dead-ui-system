@@ -119,6 +119,7 @@ struct State
 	const char *yesHint = nullptr;
 	std::function<void()> yes;
 	std::function<void()> no;
+	std::function<void()> ok;		// a message only A leaves: what it then does
 	bool awaiting = false;			// a Binding row waiting for a control
 	std::function<void(const std::string&)> controlAnswer;	// a module's row: what the press does
 	// work under way: its page (or text over the page, busyOver) shown, then fn run
@@ -212,6 +213,7 @@ void clearMessage()
 	st.yesHint = nullptr;
 	st.yes = nullptr;
 	st.no = nullptr;
+	st.ok = nullptr;
 }
 
 // B leaves the page (its own back if it has one), A does the row's thing, Left/Right picks a Choice's value
@@ -295,7 +297,17 @@ void act(Button code)
 	st.dirty = true;
 	if (!st.message.empty())
 	{
-		if (code == Button::A || code == Button::B)
+		// only A leaves this one
+		if (st.ok)
+		{
+			if (code == Button::A)
+			{
+				const std::function<void()> ok = st.ok;
+				clearMessage();
+				ok();
+			}
+		}
+		else if (code == Button::A || code == Button::B)
 		{
 			const std::function<void()> then = code == Button::A ? st.yes : st.no;
 			clearMessage();
@@ -984,13 +996,14 @@ void downloadOver()
 		return;
 	}
 	st.modules = recomp::installedFor(st.discSha1);
-	// the module playing now, replaced: the game starts again in it
+	const std::string name = moduleName(st.downloading.title, st.downloading.name);
+	// the module playing now, replaced: the game starts again in it, on A
 	if (st.downloading.id == st.running && st.host.modulePlaying)
 	{
-		finish(Result::Switch);
+		message(name + "\nrequires a restart");
+		st.ok = [] { finish(Result::Switch); };
 		return;
 	}
-	const std::string name = moduleName(st.downloading.title, st.downloading.name);
 	pop();
 	refreshStore(name);
 	message(name + (st.updating ? " is updated." : " is installed."));
