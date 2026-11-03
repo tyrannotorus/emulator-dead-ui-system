@@ -712,8 +712,6 @@ int run(recomp::Module module, const std::string& disc, std::function<void()> co
 		Outcome outcome = Outcome::Stopped;
 		if (!recomp::readManifest(manifest, module))
 			problem = moduleTitle + " cannot be read";
-		else if (module.host != recomp::HostFormat)
-			problem = moduleTitle + " needs an update";
 		else
 		{
 			ui::putPage("Loading...", shown);
