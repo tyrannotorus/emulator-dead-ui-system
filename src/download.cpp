@@ -89,7 +89,7 @@ std::vector<StoreEntry> parseCatalog(const std::string& text)
 	return entries;
 }
 
-// through a new file: never half written
+// for modules built when the store only read this file; through a new file: never half written
 void saveCatalog(const std::string& text)
 {
 	const std::string file = catalogFile();
@@ -272,14 +272,16 @@ ModuleInfo readInfo(const std::string& text)
 	return info;
 }
 
-std::vector<StoreEntry> storeCatalog(const std::atomic<bool>& cancel)
+bool storeCatalog(std::vector<StoreEntry>& entries, const std::atomic<bool>& cancel)
 {
+	entries.clear();
 	const char *test = std::getenv("DEADUI_TEST_CATALOG");
 	const std::string text = fetchText(test != nullptr && *test != '\0' ? test : DEADUI_STORE_URL, cancel);
 	if (text.compare(0, 8, "store = ") != 0)	// not fetched, or something else's page
-		return parseCatalog(readText(catalogFile()));
+		return false;
 	saveCatalog(text);
-	return parseCatalog(text);
+	entries = parseCatalog(text);
+	return true;
 }
 
 std::string install(const StoreEntry& entry, std::atomic<uint64_t>& done, std::atomic<uint64_t>& total,

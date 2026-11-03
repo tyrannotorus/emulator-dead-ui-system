@@ -149,11 +149,15 @@ struct State
 	std::string downloadError;
 	recomp::StoreEntry downloading;
 	bool updating = false;			// over a version installed
-	std::vector<recomp::StoreEntry> store;		// what the Recomp Store offers, read as it opens
+	std::vector<recomp::StoreEntry> store;		// what the Recomp Store's page offers
+	std::vector<recomp::StoreEntry> storeCache;	// the list fetched, kept in memory for this run
+	bool storeCached = false;
+	bool storeAwaitsNetwork = false;	// an empty store's page, to fetch the list when the network is back
 	std::thread storeLoad;			// reading it, its page saying so
 	std::atomic<bool> storeLoaded { false };
 	std::atomic<bool> cancelStoreLoad { false };
 	std::vector<recomp::StoreEntry> storeFetched;
+	bool storeFetchedOk = false;
 	u64 storeOpenedAt = 0;
 	std::vector<InfoLine> info;		// a module's page: its text in lines
 	int infoTop = 0;				// the line at the top of it
@@ -1154,6 +1158,8 @@ Screen moduleScreen(const StoreModule& m)
 	return screen;
 }
 
+Screen currentStore();
+
 // the store's page: what is installed, first and with a download icon what has an update, and what can be
 // downloaded, each under its section's name unless it has nothing; every module opens its own page. The cursor on this game's
 // module if it has one.
@@ -1188,7 +1194,25 @@ Screen storeScreen()
 		}
 	}
 	if (screen.items.empty())
+	{
 		screen.buttons = [] { return Buttons { { "B", "BACK" } }; };
+		// nothing installed and no list: says so, and fetches one when the network is back
+		st.storeAwaitsNetwork = false;
+		screen.body = [](int ox) {
+			if (!st.network || !st.storeCached)
+				drawMessage(loaded->large, "No Internet Connection", ox, 0, st.canvas.width(), st.canvas.height());
+		};
+		screen.tick = [] {
+			if (!st.network)
+				st.storeAwaitsNetwork = true;
+			else if (st.storeAwaitsNetwork)
+			{
+				st.storeAwaitsNetwork = false;
+				page() = currentStore();
+				redraw();
+			}
+		};
+	}
 	else
 		reveal(screen);
 	return screen;
@@ -1211,23 +1235,15 @@ void refreshStore(const std::string& name)
 	shown = std::move(fresh);
 }
 
-// With a network: straight to the store's page, saying so while what it offers is read, its rows then in place
-// of that (B gives up). Without: what is installed at once, to be deleted, and nothing said of updates or
-// downloads beyond the network's status at the bottom left.
-void openStore()
+// the page that fetches the list, saying so, its rows then in place of that (B gives up). A list that could not be
+// fetched is not kept, so the store tries again when next opened.
+Screen loadingStoreScreen()
 {
-	endStoreLoad();
-	if (!st.network)
-	{
-		st.store.clear();
-		push(storeScreen());
-		return;
-	}
 	st.storeLoaded = false;
 	st.cancelStoreLoad = false;
 	st.storeOpenedAt = nowMs();
 	st.storeLoad = std::thread([] {
-		st.storeFetched = recomp::storeCatalog(st.cancelStoreLoad);
+		st.storeFetchedOk = recomp::storeCatalog(st.storeFetched, st.cancelStoreLoad);
 		st.storeLoaded = true;
 	});
 	Screen screen;
@@ -1247,10 +1263,38 @@ void openStore()
 			return;
 		endStoreLoad();
 		st.store = std::move(st.storeFetched);
+		if (st.storeFetchedOk)
+		{
+			st.storeCache = st.store;
+			st.storeCached = true;
+		}
 		page() = storeScreen();
 		redraw();
 	};
-	push(std::move(screen));
+	return screen;
+}
+
+// The store as things stand. No network comes first: what is installed, to be deleted, whatever was fetched before;
+// nothing said of updates or downloads. With one: the list fetched this run, else it is fetched now.
+Screen currentStore()
+{
+	endStoreLoad();
+	if (!st.network)
+	{
+		st.store.clear();
+		return storeScreen();
+	}
+	if (st.storeCached)
+	{
+		st.store = st.storeCache;
+		return storeScreen();
+	}
+	return loadingStoreScreen();
+}
+
+void openStore()
+{
+	push(currentStore());
 }
 
 }	// namespace
