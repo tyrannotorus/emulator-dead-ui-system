@@ -1046,7 +1046,7 @@ bool hasUpdate(const StoreModule& m)
 }
 
 // a module's page's text, from its store.json (of the version on offer, unless it is the one installed), in
-// sections under their names: Description, Features, Supported Formats, Changelog (for the version named first)
+// sections under their names: Description, Features, Supported Formats, Changelog
 // and Source. A section with nothing to say is left out.
 std::vector<InfoLine> moduleInfo(const StoreModule& m)
 {
@@ -1100,8 +1100,7 @@ std::vector<InfoLine> moduleInfo(const StoreModule& m)
 		}
 	}
 	heading("Changelog");
-	paragraph(hasUpdate(m) ? "Version " + m.entry.version + ", you have " + m.own.version
-			: "Version " + (m.installed ? m.own.version : m.entry.version), White);
+	paragraph("Version " + (m.installed && !hasUpdate(m) ? m.own.version : m.entry.version), White);
 	list(info.changelog);
 	if (!info.repo.empty())
 	{
@@ -1177,6 +1176,7 @@ Screen storeScreen()
 	screen.status = storeStatus;
 	std::vector<StoreModule> modules = storeModules();
 	std::stable_partition(modules.begin(), modules.end(), hasUpdate);
+	const auto updates = std::count_if(modules.begin(), modules.end(), hasUpdate);
 	const char *const sections[] = { "Installed", "Downloadable" };
 	for (int section = 0; section < 2; section++)
 	{
@@ -1189,6 +1189,8 @@ Screen storeScreen()
 			{
 				Item heading;
 				heading.name = sections[section];
+				if (section == 0 && updates > 0)
+					heading.name += " (" + std::to_string(updates) + (updates == 1 ? " Update" : " Updates") + " Available)";
 				heading.row = Row::Header;
 				screen.items.push_back(std::move(heading));
 				named = true;
