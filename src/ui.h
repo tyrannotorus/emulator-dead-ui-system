@@ -168,10 +168,7 @@ bool showPage(std::function<void()> draw);
 // The emulator handing the game to a recomp module, or back. Stays until the next one draws.
 void putPage(const std::string& line, const std::string& under);
 
-// a small label as BGRA pixels, its size in width and height (none without the font): the frame
-// counter, as the emulator's Show FPS draws it (its colour on a dark box)
-std::vector<u32> label(const std::string& text, int& width, int& height);
-// the label's characters, for a process with no fonts to compose (a hosted module): 32-bit values, its padding and
+// a counter's characters, for a process with no fonts to compose (a hosted module): 32-bit values, its padding and
 // the characters' height, how many, then for each its code, its width and its pixels. False if not written.
 bool writeLabelCells(const std::string& file, const std::string& chars);
 

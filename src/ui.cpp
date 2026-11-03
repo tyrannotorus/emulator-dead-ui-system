@@ -1798,23 +1798,6 @@ void drawPage(const std::string& line, const std::string& under)
 	}
 }
 
-std::vector<u32> label(const std::string& text, int& width, int& height)
-{
-	width = height = 0;
-	if (!loadFonts())
-		return {};
-	Font& font = loaded->tiny;
-	const int pad = S(2);
-	width = font.measure(text) + pad * 2;
-	height = font.lineHeight() + pad * 2;
-	Canvas c;
-	c.resize(width, height);
-	c.clear(0x202020);
-	// the emulator's: yellow at 70% over its dark box
-	c.text(font, text, pad, pad + font.ascent(), 0xbcbc0a);
-	return std::vector<u32>(c.data(), c.data() + (size_t)width * height);
-}
-
 bool writeLabelCells(const std::string& file, const std::string& chars)
 {
 	if (!loadFonts())
@@ -1836,7 +1819,7 @@ bool writeLabelCells(const std::string& file, const std::string& chars)
 		Canvas c;
 		c.resize(width, (int)height);
 		c.clear(0x202020);
-		// as label: the emulator's yellow at 70% over its dark box
+		// the emulator's yellow at 70% over its dark box
 		c.text(font, text, 0, font.ascent(), 0xbcbc0a);
 		const u32 cell[2] = { (u32)(unsigned char)ch, (u32)width };
 		written = written && std::fwrite(cell, sizeof(cell[0]), 2, f) == 2
