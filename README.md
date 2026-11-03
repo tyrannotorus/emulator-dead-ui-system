@@ -17,7 +17,7 @@ add_subdirectory(ui)
 target_link_libraries(myemulator PRIVATE deadui)
 ```
 
-The host gives it a screen (`ui::setDisplay`), its buttons and its own pages (`ui.h`). The store's list is a text
+The emulator gives it a screen (`ui::setDisplay`), its buttons and its own pages (`ui.h`). The store's list is a text
 file at `DEADUI_STORE_URL`, in the format `download.h` describes.
 
 ## Files
