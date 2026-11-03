@@ -230,6 +230,10 @@ public:
 		if (pid < 0)
 		{
 			why = std::string("cannot start: ") + std::strerror(errno);
+			close(toChild[0]);
+			close(toChild[1]);
+			close(fromChild[0]);
+			close(fromChild[1]);
 			return false;
 		}
 		if (pid == 0)
