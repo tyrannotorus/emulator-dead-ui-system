@@ -23,7 +23,7 @@ const std::vector<Page>& pages()
 			{ "video", "Mipmaps", "Far Textures", "Smooth is much faster and doesn't shimmer. Sharp is the PSP's own.",
 					{ { "Sharp", 0 }, { "Smooth", 1 } }, false, 1 },
 			{ "video", "FrameRate", "Frame Rate", "God of War games only. 30 stays at full speed. 60 is smoother but slows the game where it can't keep up.",
-					{ { "30", 30 }, { "60", 60 } }, true, 30 },
+					{ { "30", 30 }, { "60", 60 } }, false, 30 },
 		} },
 	};
 	return list;
