@@ -20,6 +20,8 @@ const std::vector<Page>& pages()
 					{ { "PSP", 0 }, { "Taller", 1 } }, false, 0 },
 			{ "video", "FrameSkip", "Frame Skip", "Skips drawing frames when the game falls behind.",
 					{ { "Off", 0 }, { "Auto", 1 } }, false, 0 },
+			{ "video", "Mipmaps", "Far Textures", "Smooth is much faster and doesn't shimmer. Sharp is the PSP's own.",
+					{ { "Sharp", 0 }, { "Smooth", 1 } }, false, 1 },
 			{ "video", "FrameRate", "Frame Rate", "God of War games only. 30 stays at full speed. 60 is smoother but slows the game where it can't keep up.",
 					{ { "30", 30 }, { "60", 60 } }, true, 30 },
 		} },
