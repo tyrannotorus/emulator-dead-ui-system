@@ -93,61 +93,113 @@ void Canvas::fill(int x, int y, int width, int height, u32 rgb)
 		std::fill(&pixels[(size_t)yy * w + x0], &pixels[(size_t)yy * w + std::max(x0, x1)], 0xff000000 | rgb);
 }
 
+// rgb over p by alpha (1-254), as (rgb * alpha + p * (255 - alpha)) / 255 rounded: two channels a multiply, no division
+static inline u32 mix(u32 p, u32 rgb, u32 alpha)
+{
+	const u32 inv = 255 - alpha;
+	u32 rb = (rgb & 0xff00ff) * alpha + (p & 0xff00ff) * inv + 0x800080;
+	u32 g = (rgb & 0xff00) * alpha + (p & 0xff00) * inv + 0x8000;
+	rb = ((rb + ((rb >> 8) & 0xff00ff)) >> 8) & 0xff00ff;
+	g = ((g + ((g >> 8) & 0xff00)) >> 8) & 0xff00;
+	return 0xff000000 | rb | g;
+}
+
 void Canvas::blend(int x, int y, u32 rgb, u32 alpha)
 {
 	if (x < 0 || y < 0 || x >= w || y >= h || alpha == 0)
 		return;
 	u32& p = pixels[(size_t)y * w + x];
-	if (alpha >= 255)
-	{
-		p = 0xff000000 | rgb;
-		return;
-	}
-	const u32 inv = 255 - alpha;
-	const u32 r = (((rgb >> 16) & 0xff) * alpha + ((p >> 16) & 0xff) * inv + 127) / 255;
-	const u32 g = (((rgb >> 8) & 0xff) * alpha + ((p >> 8) & 0xff) * inv + 127) / 255;
-	const u32 b = ((rgb & 0xff) * alpha + (p & 0xff) * inv + 127) / 255;
-	p = 0xff000000 | (r << 16) | (g << 8) | b;
+	p = alpha >= 255 ? 0xff000000 | rgb : mix(p, rgb, alpha);
 }
 
-void Canvas::roundRect(int x, int y, int width, int height, int r, u32 rgb)
+void Canvas::blendRun(int x, int y, u32 rgb, const u8 *alpha, int count)
 {
-	r = std::min(r, std::min(width, height) / 2);
+	if (y < 0 || y >= h)
+		return;
+	u32 *row = pixels.data() + (size_t)y * w;
+	const int from = std::max(0, -x), to = std::min(count, w - x);
+	for (int i = from; i < to; i++)
+	{
+		const u32 a = alpha[i];
+		if (a == 0)
+			continue;
+		u32& p = row[x + i];
+		p = a >= 255 ? 0xff000000 | rgb : mix(p, rgb, a);
+	}
+}
+
+void Canvas::blendSpan(int x, int y, u32 rgb, u32 alpha, int count)
+{
+	if (y < 0 || y >= h || alpha == 0)
+		return;
+	u32 *row = pixels.data() + (size_t)y * w;
+	const int from = std::max(0, -x), to = std::min(count, w - x);
+	for (int i = from; i < to; i++)
+	{
+		u32& p = row[x + i];
+		p = alpha >= 255 ? 0xff000000 | rgb : mix(p, rgb, alpha);
+	}
+}
+
+const Canvas::Ends& Canvas::ends(int height, int r)
+{
+	for (const Ends& e : endsCache)
+		if (e.height == height && e.r == r)
+			return e;
+	Ends e;
+	e.height = height, e.r = r;
+	e.left.resize((size_t)height * r), e.right.resize((size_t)height * r), e.middle.resize(height), e.full.resize(height);
 	for (int yy = 0; yy < height; yy++)
 	{
 		const float py = yy + 0.5f;
 		// the corners' rows: each pixel covered as far as the arc is from its center
 		const float cy = py < r ? r : py > height - r ? height - r : py;
-		if (cy == py)
+		e.full[yy] = cy == py;
+		const auto covered = [&](float dx) {
+			const float d = std::sqrt(dx * dx + (py - cy) * (py - cy)) - r;
+			return (u8)(u32)(std::clamp(0.5f - d, 0.f, 1.f) * 255.f + 0.5f);
+		};
+		for (int xx = 0; xx < r; xx++)
+		{
+			e.left[(size_t)yy * r + xx] = covered(xx + 0.5f - r);
+			e.right[(size_t)yy * r + xx] = covered(xx + 0.5f);
+		}
+		// between the corners, the row's edge alone
+		e.middle[yy] = (u8)(u32)(std::clamp(0.5f - (std::abs(py - cy) - r), 0.f, 1.f) * 255.f + 0.5f);
+	}
+	if (endsCache.size() >= 16)
+		endsCache.erase(endsCache.begin());
+	endsCache.push_back(std::move(e));
+	return endsCache.back();
+}
+
+void Canvas::roundRect(int x, int y, int width, int height, int r, u32 rgb)
+{
+	r = std::min(r, std::min(width, height) / 2);
+	if (width <= 0 || height <= 0 || r < 0)
+		return;
+	rgb &= 0xffffff;
+	const Ends& e = ends(height, r);
+	for (int yy = 0; yy < height; yy++)
+	{
+		if (e.full[yy])
 		{
 			fill(x, y + yy, width, 1, rgb);
 			continue;
 		}
-		auto corner = [&](int xx) {
-			const float px = xx + 0.5f;
-			const float cx = px < r ? r : px > width - r ? width - r : px;
-			const float d = std::sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy)) - r;
-			blend(x + xx, y + yy, rgb, (u32)(std::clamp(0.5f - d, 0.f, 1.f) * 255.f + 0.5f));
-		};
-		for (int xx = 0; xx < r; xx++)
-			corner(xx);
-		// between the corners, the row's edge alone
-		const u32 alpha = (u32)(std::clamp(0.5f - (std::abs(py - cy) - r), 0.f, 1.f) * 255.f + 0.5f);
-		if (alpha >= 255)
+		blendRun(x, y + yy, rgb, &e.left[(size_t)yy * r], r);
+		if (e.middle[yy] >= 255)
 			fill(x + r, y + yy, width - 2 * r, 1, rgb);
 		else
-			for (int xx = r; xx < width - r; xx++)
-				blend(x + xx, y + yy, rgb, alpha);
-		for (int xx = std::max(r, width - r); xx < width; xx++)
-			corner(xx);
+			blendSpan(x + r, y + yy, rgb, e.middle[yy], width - 2 * r);
+		blendRun(x + width - r, y + yy, rgb, &e.right[(size_t)yy * r], r);
 	}
 }
 
 void Canvas::sprite(const Sprite& shape, int x, int y, u32 rgb)
 {
 	for (int yy = 0; yy < shape.h; yy++)
-		for (int xx = 0; xx < shape.w; xx++)
-			blend(x + xx, y + yy, rgb, shape.covered[(size_t)yy * shape.w + xx]);
+		blendRun(x, y + yy, rgb & 0xffffff, &shape.covered[(size_t)yy * shape.w], shape.w);
 }
 
 void Sprite::polygon(const float *xy, int count)
@@ -217,8 +269,7 @@ int Canvas::text(Font& font, const std::string& text, int x, int baseline, u32 r
 	{
 		const Font::Glyph& g = font.glyph(nextCodepoint(text, pos));
 		for (int gy = 0; gy < g.height; gy++)
-			for (int gx = 0; gx < g.width; gx++)
-				blend(x + g.left + gx, baseline - g.top + gy, rgb, g.alpha[(size_t)gy * g.width + gx]);
+			blendRun(x + g.left, baseline - g.top + gy, rgb & 0xffffff, &g.alpha[(size_t)gy * g.width], g.width);
 		x += g.advance;
 	}
 	return x;

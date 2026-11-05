@@ -156,6 +156,9 @@ enum class Result { Open, Resume, Quit, Restart, Switch };
 void finish(Result result);
 // every frame while open: repeats held directions, redraws when needed; closes on a result
 Result frame();
+// a picture went to the display since the last call: a host's loop goes straight on to the next frame (the display's flip paces it,
+// at the panel's own refresh), and waits only while nothing moves
+bool shown();
 
 // the start page, until the game's first frame: a line, the disc's name under it
 bool showStart(const std::string& line, const std::string& under);

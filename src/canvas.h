@@ -76,10 +76,22 @@ public:
 
 private:
 	void blend(int x, int y, u32 rgb, u32 alpha);	// alpha 0-255
+	// a row's run of pixels in one colour, each by its own coverage (0-255), clipped to the canvas once
+	void blendRun(int x, int y, u32 rgb, const u8 *alpha, int count);
+	// the same, all by one coverage
+	void blendSpan(int x, int y, u32 rgb, u32 alpha, int count);
+	// a rounded rectangle's ends by its height and radius: how much of each pixel they cover, worked out once
+	struct Ends
+	{
+		int height = 0, r = 0;
+		std::vector<u8> left, right, middle, full;	// left, right: r a row; middle: the row between them; full: a row drawn whole
+	};
+	const Ends& ends(int height, int r);
 
 	int w = 0;
 	int h = 0;
 	std::vector<u32> pixels;
+	std::vector<Ends> endsCache;
 };
 
 // A small shape (an icon) as how much of each pixel it covers: worked out once, as that takes some 16 tests of

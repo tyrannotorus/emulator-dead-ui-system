@@ -20,8 +20,6 @@ const std::vector<Page>& pages()
 					{ { "Original", 0 }, { "Fill", 1 }, { "Crop", 2 } }, false, 0 },
 			{ "video", "FrameSkip", "Frame Skip", "Skips drawing frames when the game falls behind.",
 					{ { "Off", 0 }, { "Auto", 1 } }, false, 0 },
-			{ "video", "Mipmaps", "Far Textures", "Smooth is much faster and doesn't shimmer. Sharp is the PSP's own.",
-					{ { "Sharp", 0 }, { "Smooth", 1 } }, false, 1 },
 		} },
 	};
 	return list;

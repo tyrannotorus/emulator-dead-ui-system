@@ -89,6 +89,46 @@ u64 nowMs()
 			std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
+// DEADUI_MENUPERF=1 (tests): the menu's pictures, a line a second on stderr: how many, the drawing, the showing (the copy into the
+// display and the flip), the longest gap between two, the clock
+const bool menuPerf = std::getenv("DEADUI_MENUPERF") != nullptr;
+struct MenuPerf
+{
+	int shows = 0, one = 0, two = 0, more = 0;	// the gaps before them: a refresh, two, longer (nothing moving)
+	double draw = 0, show = 0, longest = 0, last = 0, since = 0;
+} perf;
+double perfNow()
+{
+	return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+void perfNote(double drawStart, double showStart, double showEnd)
+{
+	if (perf.since == 0)
+		perf.since = showEnd;
+	else
+	{
+		const double gap = showEnd - perf.last;
+		perf.longest = std::max(perf.longest, gap);
+		(gap <= 18.5 ? perf.one : gap <= 35.0 ? perf.two : perf.more)++;
+	}
+	perf.last = showEnd, perf.shows++, perf.draw += showStart - drawStart, perf.show += showEnd - showStart;
+	if (showEnd - perf.since < 1000)
+		return;
+	char khz[16] = "?";
+	if (FILE *f = std::fopen("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", "r"))
+	{
+		if (!std::fgets(khz, sizeof(khz), f))
+			khz[0] = '?', khz[1] = 0;
+		std::fclose(f);
+		khz[std::strcspn(khz, "\n")] = 0;
+	}
+	std::fprintf(stderr, DEADUI_APP_NAME " menu: %d pictures in %.0f ms, after a gap of a refresh %d, two %d, longer %d; a picture: drawing %.1f ms, "
+			"showing %.1f ms; longest gap %.1f ms; cpu0 %s kHz\n", perf.shows, showEnd - perf.since, perf.one, perf.two, perf.more,
+			perf.draw / perf.shows, perf.show / perf.shows, perf.longest, khz);
+	perf = MenuPerf {};
+	perf.since = perf.last = showEnd;
+}
+
 struct LoadedFonts : Fonts
 {
 	FT_Library library = nullptr;
@@ -154,6 +194,7 @@ struct State
 	std::function<void()> hostPage;	// a page of the host's own, over everything (showPage)
 	Result result = Result::Open;
 	bool dirty = true;
+	bool shown = false;			// a picture went to the display since the host last asked (shown())
 	Button held = Button::None;		// a direction held: repeated
 	u64 repeatAt = 0;
 	bool network = false;			// a network connection, again every second while open
@@ -618,6 +659,7 @@ void drawPills(const Screen& screen)
 
 void draw()
 {
+	const double drawStart = menuPerf ? perfNow() : 0;
 	Canvas& c = st.canvas;
 	if (st.hostPage)
 		st.hostPage();
@@ -653,7 +695,11 @@ void draw()
 			drawPills(screen);
 		}
 	}
+	const double showStart = menuPerf ? perfNow() : 0;
 	st.display->show(c.data());
+	st.shown = true;
+	if (menuPerf)
+		perfNote(drawStart, showStart, perfNow());
 }
 
 void endStoreLoad()
@@ -1671,6 +1717,13 @@ void button(Button code, bool pressed)
 void finish(Result result)
 {
 	st.result = result;
+}
+
+bool shown()
+{
+	const bool was = st.shown;
+	st.shown = false;
+	return was;
 }
 
 Result frame()
