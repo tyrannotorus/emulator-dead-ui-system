@@ -1466,7 +1466,7 @@ Screen mainScreen(const std::string& title, Host host)
 	screen.items.push_back(entry("Options", "", [] { push(optionsScreen()); }));
 	screen.items.push_back(entry("Recomp Store", "", openStore));
 	screen.items.push_back(entry("Quit", "", [] { finish(Result::Quit); }));
-	st.discSha1 = recomp::chdSha1(host.disc);
+	st.discSha1 = recomp::discId(host.disc);
 	st.modules = recomp::installedFor(st.discSha1);
 	st.running = host.core == Core::Recomp ? recomp::runningModule() : "";
 	st.host = std::move(host);

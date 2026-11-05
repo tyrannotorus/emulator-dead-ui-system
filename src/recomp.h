@@ -9,7 +9,8 @@
 //   version = 1.0.0
 //   exec = mygame                   the executable, beside the manifest
 //   host = 1                        the format it is hosted in (HostFormat): not checked
-//   disc = 0123abcd...              each disc it plays, by the SHA-1 its CHD's header records
+//   disc = 0123abcd...              each disc it plays: by the SHA-1 its CHD's header records, or by what the emulator
+//                                   names discs by (setDiscId)
 //   title = My Game                 what the menu calls it
 //   setting = scale | Resolution | 1=640x480, panel=1024x768 | panel
 //                                   each setting, shown in Options: key | name | value=label, ... | default
@@ -33,6 +34,9 @@ std::string home();
 
 // the SHA-1 a CHD's header records (version 5), in lowercase hex; empty for anything else
 std::string chdSha1(const std::string& path);
+// what a disc goes by for its modules: its CHD's SHA-1, unless the emulator names its discs itself
+std::string discId(const std::string& path);
+void setDiscId(std::function<std::string(const std::string&)> namer);
 
 struct Setting
 {

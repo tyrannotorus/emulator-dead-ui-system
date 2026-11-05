@@ -108,6 +108,18 @@ std::string home()
 	return dir != nullptr ? dir : ".";
 }
 
+static std::function<std::string(const std::string&)> discNamer;
+
+void setDiscId(std::function<std::string(const std::string&)> namer)
+{
+	discNamer = std::move(namer);
+}
+
+std::string discId(const std::string& path)
+{
+	return discNamer ? discNamer(path) : chdSha1(path);
+}
+
 std::string chdSha1(const std::string& path)
 {
 	unsigned char h[104];
@@ -222,7 +234,7 @@ std::string runningModule()
 
 void runChosen(const std::string& disc, std::function<void()> controls)
 {
-	const std::vector<Module> modules = installedFor(chdSha1(disc));
+	const std::vector<Module> modules = installedFor(discId(disc));
 	const auto chosen = std::find_if(modules.begin(), modules.end(), [](const Module& m) {
 		return get("core." + m.id) == "recomp";
 	});
