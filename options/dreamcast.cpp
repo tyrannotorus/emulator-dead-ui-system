@@ -17,8 +17,6 @@ const std::vector<Page>& pages()
 		} },
 		{ "Video", "", {
 			{ "config", "rend.ShowFPS", "Show FPS", "Shows the frame rate.", { { "Off", 0 }, { "On", 1 } }, true, 0 },
-			{ "config", "pvr.AutoSkipFrame", "Frame Skip", "Skips drawing frames when the game falls behind.",
-					{ { "Off", 0 }, { "Normal", 1 }, { "Maximum", 2 } }, false, 0 },
 			{ "config", "rend.TextureFiltering", "Texture Filter", "How the game's textures are smoothed.",
 					{ { "Default", 0 }, { "Nearest", 1 }, { "Linear", 2 } }, false, 0 },
 		} },
