@@ -22,6 +22,8 @@ const std::vector<Page>& pages()
 					{ { "Default", 0 }, { "Nearest", 1 }, { "Linear", 2 } }, false, 0 },
 			{ "config", "aica.DSPEnabled", "Audio DSP", "Sound effects such as reverb. Slower.",
 					{ { "Off", 0 }, { "On", 1 } }, true, 0 },
+			{ "config", "aica.ThreadedAudio", "Threaded Audio", "Turning off can fix some games.",
+					{ { "Off", 0 }, { "On", 1 } }, true, 1 },
 		} },
 	};
 	return list;
