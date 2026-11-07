@@ -23,7 +23,7 @@ struct Setting
 	int fallback;		// the emulator's default, for a file without it
 };
 
-// Console, Video, Audio
+// Console (the console's own settings), Emulator (the emulator's)
 struct Page
 {
 	const char *name;

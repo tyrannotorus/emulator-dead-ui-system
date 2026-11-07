@@ -8,22 +8,20 @@ namespace deadui::options
 const std::vector<Page>& pages()
 {
 	static const std::vector<Page> list {
-		{ "Console", "The Dreamcast's region and language.", {
-			{ "config", "Dreamcast.Region", "Region", "The console's region. Takes effect on restart.",
+		{ "Console", "Dreamcast settings.", {
+			{ "config", "Dreamcast.Region", "Region", "Applies on restart.",
 					{ { "Japan", 0 }, { "USA", 1 }, { "Europe", 2 }, { "Default", 3 } }, false, 1 },
-			{ "config", "Dreamcast.Language", "Language", "The console's language. Takes effect on restart.",
+			{ "config", "Dreamcast.Language", "Language", "Applies on restart.",
 					{ { "Japanese", 0 }, { "English", 1 }, { "German", 2 }, { "French", 3 }, { "Spanish", 4 },
 					  { "Italian", 5 }, { "Default", 6 } }, false, 1 },
+			{ "audio", "VmuSound", "VMU Sounds", "VMU beeps.", { { "Off", 0 }, { "On", 1 } }, true, 0 },
 		} },
-		{ "Video", "", {
-			{ "config", "rend.ShowFPS", "Show FPS", "Shows the frame rate.", { { "Off", 0 }, { "On", 1 } }, true, 0 },
-			{ "config", "rend.TextureFiltering", "Texture Filter", "How the game's textures are smoothed.",
+		{ "Emulator", "Deadcast settings.", {
+			{ "config", "rend.ShowFPS", "Show FPS", "Frame rate overlay.", { { "Off", 0 }, { "On", 1 } }, true, 0 },
+			{ "config", "rend.TextureFiltering", "Texture Filter", "Texture smoothing.",
 					{ { "Default", 0 }, { "Nearest", 1 }, { "Linear", 2 } }, false, 0 },
-		} },
-		{ "Audio", "", {
-			{ "config", "aica.DSPEnabled", "Audio DSP", "The sound chip's effects, such as reverb. Costs speed.",
+			{ "config", "aica.DSPEnabled", "Audio DSP", "Sound effects such as reverb. Slower.",
 					{ { "Off", 0 }, { "On", 1 } }, true, 0 },
-			{ "audio", "VmuSound", "VMU Sounds", "The VMU's beeps.", { { "Off", 0 }, { "On", 1 } }, true, 0 },
 		} },
 	};
 	return list;
