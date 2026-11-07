@@ -82,6 +82,8 @@ struct Item
 	bool downloadIcon = false;			// before its name (the store's: an update is available)
 };
 Item entry(const std::string& name, const std::string& desc, std::function<void()> confirm);
+// Save as default, a page's last row (the emulator's Controls: its own): save() then a message saying so
+Item saveAsDefaultEntry(const std::string& desc, std::function<void()> save);
 bool enabled(const Item& item);
 
 using Buttons = std::vector<std::pair<const char *, const char *>>;
@@ -119,6 +121,9 @@ struct Host
 	std::function<void()> localMultiplayer;
 	// a recomp setting changed (key, value): a module applies it, if it can while playing
 	std::function<void(const std::string&, const std::string&)> recompSetting;
+	// Save as default, ending each settings page: the page's settings, as this game has them, for every game
+	// (unset: no such row, as without a game or in a module's host)
+	std::function<void(const options::Page&)> saveAsDefault;
 };
 // the first page: Continue, Save, Load, Options, Recomp Store, Quit, the
 // network's status at the bottom left

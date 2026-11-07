@@ -3,14 +3,19 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <strings.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 namespace deadui::options
 {
 namespace
 {
+
+std::string gamePath;		// games/<disc id>.cfg, "" without a game
+std::vector<Page> extended;	// pages() with the game's own settings, once added
 
 std::string trim(const std::string& s)
 {
@@ -25,10 +30,10 @@ std::string path()
 	return recomp::home() + "/emu.cfg";
 }
 
-std::vector<std::string> read()
+std::vector<std::string> read(const std::string& file)
 {
 	std::vector<std::string> lines;
-	std::ifstream in(path());
+	std::ifstream in(file);
 	for (std::string line; std::getline(in, line); )
 		lines.push_back(line);
 	return lines;
@@ -68,26 +73,60 @@ Place find(const std::vector<std::string>& lines, const Setting& setting)
 	return place;
 }
 
-int get(const Setting& setting)
+// the setting's value in the file: false if it isn't there
+bool value(const std::string& file, const Setting& setting, int& value)
 {
-	const std::vector<std::string> lines = read();
+	const std::vector<std::string> lines = read(file);
 	const Place place = find(lines, setting);
 	if (place.line < 0)
-		return setting.fallback;
+		return false;
 	const std::string& line = lines[place.line];
-	const std::string value = trim(line.substr(line.find('=') + 1));
+	const std::string text = trim(line.substr(line.find('=') + 1));
 	if (setting.flag)
-		return strcasecmp(value.c_str(), "yes") == 0 || strcasecmp(value.c_str(), "true") == 0
-				|| strcasecmp(value.c_str(), "on") == 0 || value == "1";
-	// as the emulator reads a number: hexadecimal after 0x, else decimal
-	const bool hex = value.size() > 1 && value[0] == '0' && (value[1] == 'x' || value[1] == 'X');
-	return (int)std::strtoul(value.c_str(), nullptr, hex ? 16 : 10);
+		value = strcasecmp(text.c_str(), "yes") == 0 || strcasecmp(text.c_str(), "true") == 0
+				|| strcasecmp(text.c_str(), "on") == 0 || text == "1";
+	else
+	{
+		// as the emulator reads a number: hexadecimal after 0x, else decimal
+		const bool hex = text.size() > 1 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X');
+		value = (int)std::strtoul(text.c_str(), nullptr, hex ? 16 : 10);
+	}
+	return true;
 }
 
-// the file again, the setting's line changed or added; written beside it, then in its place
-void set(const Setting& setting, int value)
+int get(const Setting& setting)
 {
-	std::vector<std::string> lines = read();
+	int v;
+	return value(path(), setting, v) ? v : setting.fallback;
+}
+
+// the file's lines written beside it, then in its place (a game's file: its folder made first)
+void write(const std::string& file, const std::vector<std::string>& lines)
+{
+	if (file == gamePath)
+		mkdir((recomp::home() + "/games").c_str(), 0755);
+	const std::string temp = file + ".new";
+	FILE *out = std::fopen(temp.c_str(), "w");
+	if (out == nullptr)
+	{
+		std::printf(DEADUI_APP_NAME ": %s cannot be written\n", temp.c_str());
+		return;
+	}
+	for (const std::string& l : lines)
+		std::fprintf(out, "%s\n", l.c_str());
+	const bool written = std::fflush(out) == 0 && fsync(fileno(out)) == 0;
+	std::fclose(out);
+	if (!written || std::rename(temp.c_str(), file.c_str()) != 0)
+	{
+		std::remove(temp.c_str());
+		std::printf(DEADUI_APP_NAME ": %s cannot be written\n", file.c_str());
+	}
+}
+
+// the file again, the setting's line changed or added
+void setIn(const std::string& file, const Setting& setting, int value)
+{
+	std::vector<std::string> lines = read(file);
 	const std::string line = std::string(setting.key) + " = "
 			+ (setting.flag ? (value != 0 ? "yes" : "no") : std::to_string(value));
 	const Place place = find(lines, setting);
@@ -102,22 +141,59 @@ void set(const Setting& setting, int value)
 		lines.push_back(std::string("[") + setting.section + "]");
 		lines.push_back(line);
 	}
-	const std::string temp = path() + ".new";
-	FILE *out = std::fopen(temp.c_str(), "w");
-	if (out == nullptr)
-	{
-		std::printf(DEADUI_APP_NAME ": %s cannot be written\n", temp.c_str());
+	write(file, lines);
+}
+
+void set(const Setting& setting, int value)
+{
+	setIn(path(), setting, value);
+}
+
+// the game's file without the setting: gone with its last one
+void drop(const Setting& setting)
+{
+	if (gamePath.empty())
 		return;
-	}
+	std::vector<std::string> lines = read(gamePath);
+	const Place place = find(lines, setting);
+	if (place.line < 0)
+		return;
+	lines.erase(lines.begin() + place.line);
 	for (const std::string& l : lines)
-		std::fprintf(out, "%s\n", l.c_str());
-	const bool written = std::fflush(out) == 0 && fsync(fileno(out)) == 0;
-	std::fclose(out);
-	if (!written || std::rename(temp.c_str(), path().c_str()) != 0)
-	{
-		std::remove(temp.c_str());
-		std::printf(DEADUI_APP_NAME ": %s cannot be written\n", path().c_str());
-	}
+		if (l.find('=') != std::string::npos)
+		{
+			write(gamePath, lines);
+			return;
+		}
+	if (std::remove(gamePath.c_str()) != 0)
+		std::printf(DEADUI_APP_NAME ": %s cannot be removed\n", gamePath.c_str());
+}
+
+// a setting only some games have: never a default
+bool own(const Setting& setting)
+{
+	return std::strcmp(setting.section, "game") == 0;
+}
+
+int fallback(const Setting& setting)
+{
+	return own(setting) ? setting.fallback : get(setting);
+}
+
+int gameGet(const Setting& setting)
+{
+	int v;
+	return !gamePath.empty() && value(gamePath, setting, v) ? v : fallback(setting);
+}
+
+void gameSet(const Setting& setting, int value)
+{
+	if (gamePath.empty())
+		set(setting, value);
+	else if (value == fallback(setting))
+		drop(setting);
+	else
+		setIn(gamePath, setting, value);
 }
 
 }	// namespace
@@ -125,6 +201,53 @@ void set(const Setting& setting, int value)
 Store file()
 {
 	return { get, set };
+}
+
+void setGame(const std::string& discId)
+{
+	gamePath = discId.empty() ? "" : recomp::home() + "/games/" + discId + ".cfg";
+}
+
+bool hasGame()
+{
+	return !gamePath.empty();
+}
+
+std::string gameFile(const std::string& suffix)
+{
+	return gamePath.empty() ? "" : gamePath.substr(0, gamePath.size() - 4) + suffix;
+}
+
+Store game()
+{
+	return { gameGet, gameSet };
+}
+
+void saveAsDefault(const Page& page)
+{
+	for (const Setting& setting : page.settings)
+	{
+		if (own(setting))
+			continue;
+		const int v = gameGet(setting);
+		if (v != get(setting))
+			set(setting, v);
+		drop(setting);
+	}
+}
+
+void addGameSettings(const char *page, std::vector<Setting> settings)
+{
+	if (extended.empty())
+		extended = pages();
+	for (Page& p : extended)
+		if (std::strcmp(p.name, page) == 0)
+			p.settings.insert(p.settings.end(), settings.begin(), settings.end());
+}
+
+const std::vector<Page>& gamePages()
+{
+	return extended.empty() ? pages() : extended;
 }
 
 }

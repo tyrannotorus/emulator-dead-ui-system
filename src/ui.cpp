@@ -946,6 +946,8 @@ Screen settingsScreen(const options::Page& list)
 		item.change = [s = &setting](int i) { st.host.emulatorSettings.set(*s, s->choices[i].second); };
 		screen.items.push_back(std::move(item));
 	}
+	if (st.host.saveAsDefault)
+		screen.items.push_back(saveAsDefaultEntry("Use these settings for all games.", [&list] { st.host.saveAsDefault(list); }));
 	return screen;
 }
 
@@ -968,7 +970,7 @@ void askCoreRestart()
 void addEmulatorOptions(Screen& screen)
 {
 	screen.desc = st.host.version;
-	for (const options::Page& list : options::pages())
+	for (const options::Page& list : options::gamePages())
 		screen.items.push_back(entry(list.name, list.desc, [&list] { push(settingsScreen(list)); }));
 	Item controls = entry("Controls", "", [] { st.host.controls(); });
 	controls.available = [] { return st.host.controls != nullptr; };
@@ -1541,6 +1543,14 @@ Item entry(const std::string& name, const std::string& desc, std::function<void(
 	item.desc = desc;
 	item.confirm = std::move(confirm);
 	return item;
+}
+
+Item saveAsDefaultEntry(const std::string& desc, std::function<void()> save)
+{
+	return entry("Save as default", desc, [save = std::move(save)] {
+		save();
+		message("Saved as default.");
+	});
 }
 
 bool enabled(const Item& item)
