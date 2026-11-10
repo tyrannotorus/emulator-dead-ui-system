@@ -1868,14 +1868,15 @@ void fadeCanvas(bool in)
 
 }
 
-bool notice(const std::string& text, const std::string& hint, const std::function<bool()>& pressed)
+bool notice(const std::string& text, const std::function<Button()>& button)
 {
 	if (!st.starting)
 		return false;
 	fadeCanvas(false);
-	drawPage(text, hint);
+	drawPage(text, "");
+	drawButtons({ { "A", "OKAY" } }, 0);
 	fadeCanvas(true);
-	while (!pressed())
+	while (button() != Button::A)
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	fadeCanvas(false);
 	st.canvas.clear(Black);

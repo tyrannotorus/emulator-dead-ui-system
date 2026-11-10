@@ -172,9 +172,9 @@ bool starting();
 void startLine(const std::string& line, const std::string& under);
 void endStart();
 // A notice on a page of its own while the start page is up, before the game's first frame: the start page fades to black, the
-// notice (white, as large as the start page's line) and a hint under it fade in, and once pressed() says a button went down it
-// fades to black again, which stays until the game's first frame. False if there was no screen for it.
-bool notice(const std::string& text, const std::string& hint, const std::function<bool()>& pressed);
+// notice (white, as large as the start page's line) fades in with the menu's A OKAY pill, and once button() gives A it fades to
+// black again, which stays until the game's first frame. False if there was no screen for it.
+bool notice(const std::string& text, const std::function<Button()>& button);
 // a page of the host's own over everything (the BIOS page): drawn by draw while open, A or B quits
 bool showPage(std::function<void()> draw);
 // a page straight onto the screen as it is (fb0's page on show, in its mode), between two programs:
