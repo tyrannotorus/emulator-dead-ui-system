@@ -146,7 +146,8 @@ bool loadFonts()
 		return false;
 	if (!f->large.init(f->library, data, size, S(16)) || !f->medium.init(f->library, data, size, S(14))
 			|| !f->small.init(f->library, data, size, S(12)) || !f->tiny.init(f->library, data, size, S(10))
-			|| !f->page.init(f->library, data, size, 44) || !f->pageText.init(f->library, data, size, 28))
+			|| !f->page.init(f->library, data, size, 44) || !f->pageText.init(f->library, data, size, 28)
+			|| !f->pageNote.init(f->library, data, size, 20))
 	{
 		std::fprintf(stderr, DEADUI_APP_NAME " menu: the font cannot be read\n");
 		return false;
@@ -1804,13 +1805,13 @@ Result frame()
 	return result;
 }
 
-bool showStart(const std::string& line, const std::string& under)
+bool showStart(const std::string& line, const std::string& under, const std::string& note)
 {
 	if (st.starting)
 		return true;
 	if (st.open || !begin())
 		return false;
-	drawPage(line, under);
+	drawPage(line, under, note);
 	st.display->show(st.canvas.data());
 	st.starting = true;
 	return true;
@@ -1869,7 +1870,7 @@ void putPage(const std::string& line, const std::string& under)
 	::close(fd);
 }
 
-void drawPage(const std::string& line, const std::string& under)
+void drawPage(const std::string& line, const std::string& under, const std::string& note)
 {
 	Canvas& c = st.canvas;
 	Font& big = loaded->page;
@@ -1890,6 +1891,22 @@ void drawPage(const std::string& line, const std::string& under)
 	{
 		c.text(text, l, (c.width() - text.measure(l)) / 2, y + text.ascent(), TextGray);
 		y += text.lineHeight();
+	}
+	if (note.empty())
+		return;
+	Font& small = loaded->pageNote;
+	std::vector<std::string> notes;
+	for (size_t from = 0; from <= note.size();)
+	{
+		const size_t at = std::min(note.find('\n', from), note.size());
+		notes.push_back(note.substr(from, at - from));
+		from = at + 1;
+	}
+	y = c.height() - 40 - (int)notes.size() * small.lineHeight();
+	for (const std::string& l : notes)
+	{
+		c.text(small, l, (c.width() - small.measure(l)) / 2, y + small.ascent(), TextGray);
+		y += small.lineHeight();
 	}
 }
 

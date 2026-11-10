@@ -58,6 +58,7 @@ struct Fonts
 	Font tiny;		// values, descriptions
 	Font page;		// the start page's line
 	Font pageText;	// and the text under it
+	Font pageNote;	// and a note at its foot
 };
 Fonts& fonts();
 // what pages are drawn on, the screen's size
@@ -165,8 +166,8 @@ Result frame();
 // at the panel's own refresh), and waits only while nothing moves
 bool shown();
 
-// the start page, until the game's first frame: a line, the disc's name under it
-bool showStart(const std::string& line, const std::string& under);
+// the start page, until the game's first frame: a line, the disc's name under it, and a note at its foot (a line each, '\n')
+bool showStart(const std::string& line, const std::string& under, const std::string& note = "");
 bool starting();
 void startLine(const std::string& line, const std::string& under);
 void endStart();
@@ -186,7 +187,7 @@ std::vector<std::string> labelLines(const std::string& text, int maxWidth, bool 
 bool writeCounterCells(const std::string& file);
 
 // a page's line in white and text under it in grey, centered on black
-void drawPage(const std::string& line, const std::string& under);
+void drawPage(const std::string& line, const std::string& under, const std::string& note = "");
 // lines of text centered in a rectangle
 void drawMessage(Font& font, const std::string& message, int x, int y, int w, int h);
 // text broken at spaces into lines no wider than width
