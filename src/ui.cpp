@@ -1837,6 +1837,52 @@ void endStart()
 	st.starting = false;
 }
 
+namespace
+{
+
+constexpr int NoticeFadeMs = 300;
+
+// the canvas faded in from black or out to it over NoticeFadeMs, a picture each 16 ms
+void fadeCanvas(bool in)
+{
+	const Canvas& c = st.canvas;
+	const size_t count = (size_t)c.width() * c.height();
+	const u32 *from = c.data();
+	std::vector<u32> frame(count);
+	const u64 start = nowMs();
+	while (true)
+	{
+		const float t = std::min(1.f, (float)(nowMs() - start) / NoticeFadeMs);
+		const u32 k = (u32)((in ? t : 1.f - t) * 256.f);
+		for (size_t i = 0; i < count; i++)
+		{
+			const u32 p = from[i];
+			frame[i] = (p & 0xff000000) | ((((p & 0xff00ff) * k) >> 8) & 0xff00ff) | ((((p & 0x00ff00) * k) >> 8) & 0x00ff00);
+		}
+		st.display->show(frame.data());
+		if (t >= 1.f)
+			return;
+		std::this_thread::sleep_for(std::chrono::milliseconds(16));
+	}
+}
+
+}
+
+bool notice(const std::string& text, const std::string& hint, const std::function<bool()>& pressed)
+{
+	if (!st.starting)
+		return false;
+	fadeCanvas(false);
+	drawPage(text, hint);
+	fadeCanvas(true);
+	while (!pressed())
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	fadeCanvas(false);
+	st.canvas.clear(Black);
+	st.display->show(st.canvas.data());
+	return true;
+}
+
 bool showPage(std::function<void()> draw)
 {
 	if (!st.starting && !begin())
