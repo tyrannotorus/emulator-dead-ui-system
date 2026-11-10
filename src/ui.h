@@ -58,7 +58,6 @@ struct Fonts
 	Font tiny;		// values, descriptions
 	Font page;		// the start page's line
 	Font pageText;	// and the text under it
-	Font pageNote;	// and a note at its foot
 };
 Fonts& fonts();
 // what pages are drawn on, the screen's size
@@ -166,7 +165,8 @@ Result frame();
 // at the panel's own refresh), and waits only while nothing moves
 bool shown();
 
-// the start page, until the game's first frame: a line, the disc's name under it, and a note at its foot (a line each, '\n')
+// the start page, until the game's first frame: a line, the disc's name under it, and a note below them, as large as the line
+// (broken at '\n', and at spaces where wider than the page), all centered together
 bool showStart(const std::string& line, const std::string& under, const std::string& note = "");
 bool starting();
 void startLine(const std::string& line, const std::string& under);

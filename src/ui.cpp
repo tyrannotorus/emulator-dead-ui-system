@@ -146,8 +146,7 @@ bool loadFonts()
 		return false;
 	if (!f->large.init(f->library, data, size, S(16)) || !f->medium.init(f->library, data, size, S(14))
 			|| !f->small.init(f->library, data, size, S(12)) || !f->tiny.init(f->library, data, size, S(10))
-			|| !f->page.init(f->library, data, size, 44) || !f->pageText.init(f->library, data, size, 28)
-			|| !f->pageNote.init(f->library, data, size, 20))
+			|| !f->page.init(f->library, data, size, 44) || !f->pageText.init(f->library, data, size, 28))
 	{
 		std::fprintf(stderr, DEADUI_APP_NAME " menu: the font cannot be read\n");
 		return false;
@@ -1878,8 +1877,20 @@ void drawPage(const std::string& line, const std::string& under, const std::stri
 	const int width = std::min(c.width() - 120, 904);
 	const std::vector<std::string> lines = wrap(big, line, width);
 	const std::vector<std::string> unders = under.empty() ? std::vector<std::string>() : wrap(text, under, width);
+	// the note: broken at '\n', and at spaces where wider than the page
+	std::vector<std::string> notes;
+	for (size_t from = 0; !note.empty() && from <= note.size();)
+	{
+		const size_t at = std::min(note.find('\n', from), note.size());
+		for (const std::string& l : wrap(big, note.substr(from, at - from), width))
+			notes.push_back(l);
+		from = at + 1;
+	}
 	const int gap = unders.empty() ? 0 : 16;
-	int y = (c.height() - (int)lines.size() * big.lineHeight() - gap - (int)unders.size() * text.lineHeight()) / 2;
+	const int noteGap = notes.empty() ? 0 : big.lineHeight();
+	// all of it centered together
+	int y = (c.height() - (int)lines.size() * big.lineHeight() - gap - (int)unders.size() * text.lineHeight() - noteGap
+		- (int)notes.size() * big.lineHeight()) / 2;
 	c.clear(Black);
 	for (const std::string& l : lines)
 	{
@@ -1892,21 +1903,11 @@ void drawPage(const std::string& line, const std::string& under, const std::stri
 		c.text(text, l, (c.width() - text.measure(l)) / 2, y + text.ascent(), TextGray);
 		y += text.lineHeight();
 	}
-	if (note.empty())
-		return;
-	Font& small = loaded->pageNote;
-	std::vector<std::string> notes;
-	for (size_t from = 0; from <= note.size();)
-	{
-		const size_t at = std::min(note.find('\n', from), note.size());
-		notes.push_back(note.substr(from, at - from));
-		from = at + 1;
-	}
-	y = c.height() - 40 - (int)notes.size() * small.lineHeight();
+	y += noteGap;
 	for (const std::string& l : notes)
 	{
-		c.text(small, l, (c.width() - small.measure(l)) / 2, y + small.ascent(), TextGray);
-		y += small.lineHeight();
+		c.text(big, l, (c.width() - big.measure(l)) / 2, y + big.ascent(), TextGray);
+		y += big.lineHeight();
 	}
 }
 
