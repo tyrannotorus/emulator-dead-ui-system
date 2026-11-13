@@ -1512,7 +1512,12 @@ Screen mainScreen(const std::string& title, Host host)
 		screen.items.push_back(*item);
 	}
 	screen.items.push_back(entry("Options", "", [] { push(optionsScreen()); }));
-	screen.items.push_back(entry("Recomp Store", "", openStore));
+	screen.items.push_back(entry("Recomp Store", "", [store = host.store] {
+		if (store)
+			store();
+		else
+			openStore();
+	}));
 	screen.items.push_back(entry("Quit", "", [] { finish(Result::Quit); }));
 	st.discSha1 = recomp::discId(host.disc);
 	st.modules = recomp::installedFor(st.discSha1);

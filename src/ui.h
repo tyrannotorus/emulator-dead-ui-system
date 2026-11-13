@@ -119,6 +119,8 @@ struct Host
 	// the emulator's own pages in Options (a module's host: Controls if the program brings it; Local Multiplayer, none)
 	std::function<void()> controls;
 	std::function<void()> localMultiplayer;
+	// the main page's Recomp Store, instead of the store (an emulator without recomp modules yet: its own message)
+	std::function<void()> store;
 	// a recomp setting changed (key, value): a module applies it, if it can while playing
 	std::function<void(const std::string&, const std::string&)> recompSetting;
 	// Save as default, ending each settings page: the page's settings, as this game has them, for every game
