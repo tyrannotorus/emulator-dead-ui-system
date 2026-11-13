@@ -13,6 +13,7 @@ const std::vector<Page>& pages()
 		{ "Emulator", "Deadstation 2 settings.", {
 			{ "video", "ShowFPS", "Show FPS", "Frame rate overlay.", { { "Off", 0 }, { "On", 1 } }, true, 1 },
 			{ "video", "Picture", "Picture", "Picture shape.", { { "Original", 0 }, { "Fill", 1 } }, false, 0 },
+			{ "video", "Frameskip", "Frameskip", "Skips frames to keep speed.", { { "Off", 0 }, { "Auto", 1 } }, true, 0 },
 		} },
 	};
 	return list;
