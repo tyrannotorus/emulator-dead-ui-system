@@ -13,14 +13,13 @@ set(DEADUI_HOME_ENV MYEMU_HOME)     # the environment variable naming its folder
 set(DEADUI_ROM_ENV MYEMU_ROM)       # the one naming the file the launcher started, for the menu's title
 set(DEADUI_LINK_PREFIX mylink)      # network interfaces that are not the internet
 set(DEADUI_STORE_URL https://example.com/catalog.cfg)  # the list of recomp modules
-set(DEADUI_OPTIONS_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/myemu/options.cpp)  # its settings, in its own repository:
-                                    # it defines deadui::options::pages() (src/options.h)
 add_subdirectory(ui)
 target_link_libraries(myemulator PRIVATE deadui)
 ```
 
-The emulator gives it a screen (`ui::setDisplay`), its buttons and its own pages (`ui.h`). The store's list is a text
-file at `DEADUI_STORE_URL`, in the format `download.h` describes.
+The emulator gives it a screen (`ui::setDisplay`), its buttons and its own pages (`ui.h`), and defines its settings,
+`deadui::options::pages()` (`options.h`), in its own sources. The store's list is a text file at `DEADUI_STORE_URL`,
+in the format `download.h` describes.
 
 ## Files
 

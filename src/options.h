@@ -1,7 +1,7 @@
 // The emulator's settings: one list, shown the same in the emulator and in a recomp module, from pages(), defined in
-// the emulator's own repository (DEADUI_OPTIONS_SOURCE). The emulator shows and changes its own settings as it plays;
-// a module keeps them in emu.cfg, the emulator's file, for the emulator's next start (the two never run at once). Each
-// game has its own values over emu.cfg's, the defaults (game() below).
+// the emulator's own sources. The emulator shows and changes its own settings as it plays; a module keeps them in
+// emu.cfg, the emulator's file, for the emulator's next start (the two never run at once). Each game has its own
+// values over emu.cfg's, the defaults (game() below).
 #pragma once
 #include <functional>
 #include <string>
@@ -30,6 +30,7 @@ struct Page
 	const char *desc;
 	std::vector<Setting> settings;
 };
+// the emulator's settings: defined by the emulator
 const std::vector<Page>& pages();
 
 // where the values are: the emulator's settings, or emu.cfg

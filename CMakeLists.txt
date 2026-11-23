@@ -5,10 +5,9 @@
 #   DEADUI_ROM_ENV      the environment variable naming the file the launcher started, for the menu's title
 #   DEADUI_LINK_PREFIX  the network interfaces that are not a connection to the internet
 #   DEADUI_STORE_URL    the address of the list of recomp modules
-#   DEADUI_OPTIONS_SOURCE  the emulator's own file of its settings, in its repository: it defines
-#                       deadui::options::pages() (src/options.h)
-# and finds or leaves to this file CURL, ZLIB and freetype.
-foreach(setting DEADUI_APP_NAME DEADUI_HOME_ENV DEADUI_ROM_ENV DEADUI_LINK_PREFIX DEADUI_STORE_URL DEADUI_OPTIONS_SOURCE)
+# and finds or leaves to this file CURL, ZLIB and freetype. The emulator defines its settings, deadui::options::pages()
+# (src/options.h), in its own sources.
+foreach(setting DEADUI_APP_NAME DEADUI_HOME_ENV DEADUI_ROM_ENV DEADUI_LINK_PREFIX DEADUI_STORE_URL)
     if(NOT ${setting})
         message(FATAL_ERROR "deadui: ${setting} is not set")
     endif()
@@ -28,8 +27,7 @@ add_library(deadui STATIC
         src/sha256.cpp
         src/sha256.h
         src/ui.cpp
-        src/ui.h
-        ${DEADUI_OPTIONS_SOURCE})
+        src/ui.h)
 target_include_directories(deadui PUBLIC src)
 target_include_directories(deadui PRIVATE third_party/json)
 target_compile_features(deadui PUBLIC cxx_std_17)
