@@ -13,7 +13,8 @@ set(DEADUI_HOME_ENV MYEMU_HOME)     # the environment variable naming its folder
 set(DEADUI_ROM_ENV MYEMU_ROM)       # the one naming the file the launcher started, for the menu's title
 set(DEADUI_LINK_PREFIX mylink)      # network interfaces that are not the internet
 set(DEADUI_STORE_URL https://example.com/catalog.cfg)  # the list of recomp modules
-set(DEADUI_CONSOLE dreamcast)       # options/<console>.cpp: the emulator's settings
+set(DEADUI_OPTIONS_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/myemu/options.cpp)  # its settings, in its own repository:
+                                    # it defines deadui::options::pages() (src/options.h)
 add_subdirectory(ui)
 target_link_libraries(myemulator PRIVATE deadui)
 ```
@@ -24,7 +25,6 @@ file at `DEADUI_STORE_URL`, in the format `download.h` describes.
 ## Files
 
 - `src/`: pages, drawing, the store, downloads, installed modules and the module host
-- `options/`: the emulator's settings for each console
 - `fonts/`: the font, and its small text's characters drawn in advance (`label-cells-*.bin`)
 - `tools/`: `make-label-cells.sh` draws those characters again: run it after changing the font, or their sizes or colours
 - `toolchain/`: the tg5040 cross toolchain (`toolchain.sh`, `devlibs.sh`, `tg5040.cmake`)
