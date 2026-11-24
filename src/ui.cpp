@@ -879,14 +879,13 @@ Screen moduleControlsScreen(const recomp::Module& module)
 }
 
 // Options' rows for a module: its settings as its manifest declares them, kept in its settings.cfg; the module's name and
-// version at the bottom left, whatever is selected. Show FPS is always the first row, in every module; a module
-// does not declare it. A setting applies at once only in the module it is for, if that one is playing. Getting a
-// module, updating it and deleting it are the Recomp Store's.
+// version at the bottom left, unless the selected setting says what it does (its manifest's own text for it). Show
+// FPS is always the first row, in every module; a module does not declare it. A setting applies at once only in the
+// module it is for, if that one is playing. Getting a module, updating it and deleting it are the Recomp Store's.
 void addModuleOptions(Screen& screen, const recomp::Module& module)
 {
 	const bool playing = module.id == st.running;
-	const std::string label = moduleName(module.title, module.name) + " " + module.version;
-	screen.status = [label] { return label; };
+	screen.desc = moduleName(module.title, module.name) + " " + module.version;
 	// the frame rate in the corner, as the emulator's Show FPS
 	Item fps;
 	fps.name = "Show FPS";
